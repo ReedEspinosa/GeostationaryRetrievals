@@ -2,8 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from read_MODAERO import modaeroDB
-import matplotlib.pyplot as plt
-from timeit import default_timer as timer
+#import matplotlib.pyplot as plt
 
 dirPath = '/Users/wrespino/Synced/Remote_Sensing_Projects/GRASP_MODIS/ocean/MOD*.out'
 npzPath = '/Users/wrespino/Synced/Remote_Sensing_Projects/GRASP_MODIS/Ocean_MOD04_L2_C61.out.npz'
