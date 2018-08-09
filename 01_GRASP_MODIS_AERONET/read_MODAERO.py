@@ -7,7 +7,7 @@ import glob
 import warnings
 import os.path
 import hashlib
-import datetime as dt
+from datetime import datetime as dt # we really want datetime.datetime.striptime
 
 class modaeroDB(object):
     MOD_LAMDA = np.array([0.469, 0.555, 0.645, 0.8585, 1.24, 1.64, 2.13, 0.412, 0.443, 0.745])
@@ -20,7 +20,7 @@ class modaeroDB(object):
     hashObj = hashlib.sha1(MOD_LAMDA.tostring()+RFLCT_IND.tostring()+AERO_LAMDA.tostring()
         +AOD_IND.tostring()+MOD_LOC_IND.tostring()+AERO_LOC_IND.tostring()+GEOM_IND.tostring())
     SET_HASH = np.frombuffer(hashObj.digest(), dtype='uint32')[0] # we convert the first 32 bits to unsigned int
-    GRP_DAY_LMT = np.r_[30] # gaps at a site of this many days will trigger new aeroSite
+    GRP_MEAS_LMT = np.r_[100] # after this many pixels we start looking for non-zero time step (and chance to start new segment)
 
     
     def __init__(self, loadPath=None):
@@ -59,7 +59,7 @@ class modaeroDB(object):
 
             
     def sortData(self):
-        datenums = np.array([dt.strptime(str(yr), "%Y").toordinal()+dy for yr,dy in self.mod_loc[:,:2]])
+        datenums = np.array([dt.strptime(str(yr.astype(dtype='uint16')), "%Y").toordinal()+dy for yr,dy in self.mod_loc[:,:2]])
         srtInd = datenums.argsort();
         self.rflct = self.rflct[srtInd,:]
         self.aod = self.aod[srtInd,:]
@@ -74,13 +74,17 @@ class modaeroDB(object):
         if not self.sorted:
             self.sortData()
         siteList = np.unique(self.aero_loc[:,0]);
+        datenumSep = np.diff(self.mod_loc[:, -1])
         for siteID in siteList:
-            nowInd = self.aero_loc[:,0] == siteID
-            datenumSep = np.diff(self.mod_loc[nowInd, 4])
-            jumpInd = np.nonzero(datenumSep > self.GRP_DAY_LMT)[0]
-            # We should now loop through the above, the ind of the N aeroSite will be jumpInd[N]:(jumpInd[N+1]-1)
-            # Each new aeroSite should then be appended to siteSegment (see commented portion of temp2.py)
-            
+            nowInd = np.nonzero(self.aero_loc[:,0] == siteID)
+            siteSegment.append(aeroSite()) # Only one site per segment
+            for i in nowInd:
+                if (siteSegment[-1].length > self.GRP_MEAS_LMT) and (datenumSep[i] != 0):
+                    siteSegment.append(aeroSite()) # This segment is full, start a new one
+                siteSegment[-1].addMeas(self.rflct[i,:], self.aod[i,:], self.mod_loc[i,:], self.geom[i,:])
+        [seg.condenceAOD() for seg in siteSegment] # Condense AOD wavelengths of existing before moving on
+        return siteSegment
+                                
                 
     def saveData(self, filePath):
         np.savez_compressed(filePath, rflct=self.rflct, aod=self.aod, mod_loc=self.mod_loc, aero_loc=self.aero_loc, geom=self.geom, set_hash=self.SET_HASH)        
@@ -108,11 +112,25 @@ class modaeroDB(object):
         
 
 class aeroSite(object):
-    def __init__(self, location):
+    def __init__(self, location, MOD_LAMDA, AERO_LAMDA):
         self.aero_loc = location
+        self.MOD_LAMDA = MOD_LAMDA
+        self.AERO_LAMDA = AERO_LAMDA
+        self.rflct = np.array([]).reshape(0,MOD_LAMDA.shape[0])
+        self.aod = np.array([]).reshape(0,AERO_LAMDA.shape[0])        
+        self.mod_loc = []
+        self.geom = []
         
         
+    def addMeas(self, rflct, aod, mod_loc, geom):
+        np.vstack([self.rflct, rflct])
+        np.vstack([self.aod, aod])
+        np.vstack([self.mod_loc, mod_loc]) if self.mod_loc.size else xs
+        np.vstack([self.geom, geom]) if self.geom.size else xs
         
+        
+    def condenceAOD(self):
+        print('NOT COMPLETE')
         
         
         
