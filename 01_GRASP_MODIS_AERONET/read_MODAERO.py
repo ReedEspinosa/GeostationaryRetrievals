@@ -7,6 +7,7 @@ import glob
 import warnings
 import os.path
 import hashlib
+from math import ceil
 from datetime import datetime as dt # we really want datetime.datetime.striptime
 
 class modaeroDB(object):
@@ -30,25 +31,21 @@ class modaeroDB(object):
             self.mod_loc = np.array([]).reshape(0,self.MOD_LOC_IND.shape[0])
             self.aero_loc = np.array([]).reshape(0,self.AERO_LOC_IND.shape[0])
             self.geom = np.array([]).reshape(0,self.GEOM_IND.shape[0])
-            self.sorted = False
-                
+            self.sorted = False                
         
     def readFile(self, filePath):
         warnings.filterwarnings('ignore', message="some errors were detected") # HDF load error lines will produce warnings
         fileData = np.genfromtxt(filePath, delimiter='  ', invalid_raise=False) 
         warnings.resetwarnings()
-        
         warnings.filterwarnings('ignore', message="invalid value encountered in less_equal") # HDF has "-np.nan" sometimes 
         fileData[fileData <= -9999] = np.nan
         warnings.resetwarnings()
-        
         self.rflct = np.block([[self.rflct], [fileData[:, self.RFLCT_IND]]])
         self.aod = np.block([[self.aod], [fileData[:, self.AOD_IND]]])
         self.mod_loc = np.block([[self.mod_loc], [fileData[:, self.MOD_LOC_IND]]])
         self.aero_loc = np.block([[self.aero_loc], [fileData[:, self.AERO_LOC_IND]]])
         self.geom = np.block([[self.geom], [fileData[:, self.GEOM_IND]]])
-        self.sorted = False
-        
+        self.sorted = False     
 
     def readDIR(self, dirPath):
         filePaths = glob.glob(dirPath)
@@ -56,10 +53,10 @@ class modaeroDB(object):
         for filePath in filePaths:
             print('  %s' % filePath)
             self.readFile(filePath)
-
             
     def sortData(self):
-        datenums = np.array([dt.strptime(str(yr.astype(dtype='uint16')), "%Y").toordinal()+dy for yr,dy in self.mod_loc[:,:2]])
+        # Works from 1900-2100 & made sortData() 5x faster than w/ strptime(); strptime() version in Commit 9849d2a
+        datenums = np.array([730120 + (yr-2000)*365 + ceil((yr-2000)/4)+dy for yr,dy in self.mod_loc[:,:2]])
         srtInd = datenums.argsort();
         self.rflct = self.rflct[srtInd,:]
         self.aod = self.aod[srtInd,:]
@@ -67,7 +64,6 @@ class modaeroDB(object):
         self.aero_loc = self.aero_loc[srtInd,:]
         self.geom = self.geom[srtInd,:]
         self.sorted = True
-
     
     def groupData(self):
         siteSegment = []
@@ -76,30 +72,32 @@ class modaeroDB(object):
         siteList = np.unique(self.aero_loc[:,0]);
         datenumSep = np.diff(self.mod_loc[:, -1])
         for siteID in siteList:
-            nowInd = np.nonzero(self.aero_loc[:,0] == siteID)
-            siteSegment.append(aeroSite()) # Only one site per segment
+            nowInd = np.nonzero(self.aero_loc[:,0] == siteID)[0]
+            AEROloc = self.aero_loc[nowInd[0],:]
+            if not np.array_equiv(AEROloc, self.aero_loc[nowInd,:]):
+                warnings.warn('At least two AERONET site LAT/LON/ELEV were not the same within a single segment!')
+            siteSegment.append(aeroSite(AEROloc, self.MOD_LAMDA, self.AERO_LAMDA)) # Only one site per segment
             for i in nowInd:
-                if (siteSegment[-1].length > self.GRP_MEAS_LMT) and (datenumSep[i] != 0):
-                    siteSegment.append(aeroSite()) # This segment is full, start a new one
+                if (siteSegment[-1].Nmeas > self.GRP_MEAS_LMT) and (datenumSep[i] != 0):
+                    siteSegment.append(aeroSite(AEROloc, self.MOD_LAMDA, self.AERO_LAMDA)) # This segment is full, start a new one
                 siteSegment[-1].addMeas(self.rflct[i,:], self.aod[i,:], self.mod_loc[i,:], self.geom[i,:])
-        [seg.condenceAOD() for seg in siteSegment] # Condense AOD wavelengths of existing before moving on
+            if siteSegment[-1].Nmeas < self.GRP_MEAS_LMT/2 and len(siteSegment) > 1 and siteSegment[-2].aero_loc[0] == siteID:
+                siteSegment[-2].absorbSite(siteSegment[-1]) # Segment is short, merge with previous (if exists)
+                del siteSegment[-1]
+#        [seg.condenceAOD() for seg in siteSegment] # Condense AOD wavelengths of existing before moving on
         return siteSegment
-                                
-                
+                                         
     def saveData(self, filePath):
         np.savez_compressed(filePath, rflct=self.rflct, aod=self.aod, mod_loc=self.mod_loc, aero_loc=self.aero_loc, geom=self.geom, set_hash=self.SET_HASH)        
-        
         
     def loadData(self, filePath):
         if not os.path.isfile(filePath):
             warnings.warn('The file '+filePath+' does not exist!', stacklevel=2)
             return False
-
         loaded = np.load(filePath)
         if not np.equal(self.SET_HASH,loaded['set_hash']): # we need equal() because loaded set_hash is numpy array
             warnings.warn('The setting hash of the loaded file does not match the current defaults! Discarding loaded data...', stacklevel=2)
             return False
-
         self.rflct = loaded['rflct']
         self.aod = loaded['aod']
         self.mod_loc = loaded['mod_loc']
@@ -109,8 +107,6 @@ class modaeroDB(object):
         return True
         
         
-        
-
 class aeroSite(object):
     def __init__(self, location, MOD_LAMDA, AERO_LAMDA):
         self.aero_loc = location
@@ -118,17 +114,24 @@ class aeroSite(object):
         self.AERO_LAMDA = AERO_LAMDA
         self.rflct = np.array([]).reshape(0,MOD_LAMDA.shape[0])
         self.aod = np.array([]).reshape(0,AERO_LAMDA.shape[0])        
-        self.mod_loc = []
-        self.geom = []
-        
-        
+        self.mod_loc = np.array([])
+        self.geom = np.array([])
+        self.Nmeas = 0;
+               
     def addMeas(self, rflct, aod, mod_loc, geom):
-        np.vstack([self.rflct, rflct])
-        np.vstack([self.aod, aod])
-        np.vstack([self.mod_loc, mod_loc]) if self.mod_loc.size else xs
-        np.vstack([self.geom, geom]) if self.geom.size else xs
-        
-        
+        self.rflct = np.vstack([self.rflct, rflct])
+        self.aod = np.vstack([self.aod, aod])
+        self.mod_loc = np.vstack([self.mod_loc, mod_loc]) if self.mod_loc.size else mod_loc
+        self.geom = np.vstack([self.geom, geom]) if self.geom.size else geom
+        self.Nmeas += 1
+              
+    def absorbSite(self, site2absorb):
+        self.rflct = np.vstack([self.rflct, site2absorb.rflct])
+        self.aod = np.vstack([self.aod, site2absorb.aod])
+        self.mod_loc = np.vstack([self.mod_loc, site2absorb.mod_loc])
+        self.geom = np.vstack([self.geom, site2absorb.geom])
+        self.Nmeas = self.Nmeas + site2absorb.Nmeas
+              
     def condenceAOD(self):
         print('NOT COMPLETE')
         
