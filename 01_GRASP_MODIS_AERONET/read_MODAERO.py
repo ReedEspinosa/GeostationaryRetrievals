@@ -84,7 +84,7 @@ class modaeroDB(object):
             if siteSegment[-1].Nmeas < self.GRP_MEAS_LMT/2 and len(siteSegment) > 1 and siteSegment[-2].aero_loc[0] == siteID:
                 siteSegment[-2].absorbSite(siteSegment[-1]) # Segment is short, merge with previous (if exists)
                 del siteSegment[-1]
-#        [seg.condenceAOD() for seg in siteSegment] # Condense AOD wavelengths of existing before moving on
+        [seg.condenceAOD() for seg in siteSegment] # Remove unused AOD wavelengths
         return siteSegment
                                          
     def saveData(self, filePath):
@@ -133,9 +133,11 @@ class aeroSite(object):
         self.Nmeas = self.Nmeas + site2absorb.Nmeas
               
     def condenceAOD(self):
-        print('NOT COMPLETE')
-        
-        
+        emptyInd = np.isnan(self.aod).all(0)
+        if np.sum(~emptyInd) < 5:
+            warnings.warn('Less than 5 valid wavelengths found at AERONET site %d' % self.aero_loc[0])        
+        self.aod = np.delete(self.aod, emptyInd.nonzero(), 1)
+        self.AERO_LAMDA = np.delete(self.AERO_LAMDA, emptyInd.nonzero())
         
         
         
