@@ -21,7 +21,7 @@ class modaeroDB(object):
     hashObj = hashlib.sha1(MOD_LAMDA.tostring()+RFLCT_IND.tostring()+AERO_LAMDA.tostring()
         +AOD_IND.tostring()+MOD_LOC_IND.tostring()+AERO_LOC_IND.tostring()+GEOM_IND.tostring())
     SET_HASH = np.frombuffer(hashObj.digest(), dtype='uint32')[0] # we convert the first 32 bits to unsigned int
-    GRP_MEAS_LMT = np.r_[100] # after this many pixels we start looking for non-zero time step (and chance to start new segment)
+    GRP_DAY_LMT = np.r_[20] # maximum nt in GRASP build, each site seg will have this many unique datenums
 
     
     def __init__(self, loadPath=None):
@@ -69,8 +69,9 @@ class modaeroDB(object):
         siteSegment = []
         if not self.sorted:
             self.sortData()
-        siteList = np.unique(self.aero_loc[:,0]);
-        datenumSep = np.diff(self.mod_loc[:, -1])
+        siteList = np.unique(self.aero_loc[:,0])
+        datenumSep = np.diff(self.mod_loc[:, -1]) # below won't catch same site on consecutive orbits,last of orbit != 0
+        datenumSep[np.abs(np.diff(self.aero_loc[:,0]))>0] = -1 # in case same time registers at two sites
         for siteID in siteList:
             nowInd = np.nonzero(self.aero_loc[:,0] == siteID)[0]
             AEROloc = self.aero_loc[nowInd[0],:]
@@ -78,12 +79,11 @@ class modaeroDB(object):
                 warnings.warn('At least two AERONET site LAT/LON/ELEV were not the same within a single segment!')
             siteSegment.append(aeroSite(AEROloc, self.MOD_LAMDA, self.AERO_LAMDA)) # Only one site per segment
             for i in nowInd:
-                if (siteSegment[-1].Nmeas > self.GRP_MEAS_LMT) and (datenumSep[i] != 0):
-                    siteSegment.append(aeroSite(AEROloc, self.MOD_LAMDA, self.AERO_LAMDA)) # This segment is full, start a new one
                 siteSegment[-1].addMeas(self.rflct[i,:], self.aod[i,:], self.mod_loc[i,:], self.geom[i,:])
-            if siteSegment[-1].Nmeas < self.GRP_MEAS_LMT/2 and len(siteSegment) > 1 and siteSegment[-2].aero_loc[0] == siteID:
-                siteSegment[-2].absorbSite(siteSegment[-1]) # Segment is short, merge with previous (if exists)
-                del siteSegment[-1]
+                numDays = len(np.unique(np.atleast_2d(siteSegment[-1].mod_loc)[:,4]))
+                if (numDays == self.GRP_DAY_LMT) and (datenumSep[i] != 0) and (i != nowInd[-1]):
+                    siteSegment.append(aeroSite(AEROloc, self.MOD_LAMDA, self.AERO_LAMDA)) # This segment is full, start a new one
+            # code to prevent siteSegments with only a couple days would go here
         [seg.condenceAOD() for seg in siteSegment] # Remove unused AOD wavelengths
         return siteSegment
                                          
