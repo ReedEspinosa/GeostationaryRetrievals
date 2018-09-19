@@ -8,7 +8,6 @@ import warnings
 import os.path
 import hashlib
 from math import ceil
-from datetime import datetime as dt # we really want datetime.datetime.striptime
 
 class modaeroDB(object):
     MOD_LAMDA = np.array([0.469, 0.555, 0.645, 0.8585, 1.24, 1.64, 2.13, 0.412, 0.443, 0.745])
