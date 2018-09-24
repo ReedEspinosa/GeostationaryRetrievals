@@ -1,13 +1,14 @@
 # -*- coding: utf-8 -*-
 
-# ultimatly we want a list of objects with all times at a given aeronet station
-
 import numpy as np
 import glob
 import warnings
-import os.path
+import os
+import sys
 import hashlib
 from math import ceil
+sys.path.append(os.path.join("..", "GRASP_PythonUtils"))
+from runGRASP import graspRun, pixel
 
 class modaeroDB(object):
     MOD_LAMDA = np.array([0.469, 0.555, 0.645, 0.8585, 1.24, 1.64, 2.13, 0.412, 0.443, 0.745])
@@ -20,7 +21,7 @@ class modaeroDB(object):
     hashObj = hashlib.sha1(MOD_LAMDA.tostring()+RFLCT_IND.tostring()+AERO_LAMDA.tostring()
         +AOD_IND.tostring()+MOD_LOC_IND.tostring()+AERO_LOC_IND.tostring()+GEOM_IND.tostring())
     SET_HASH = np.frombuffer(hashObj.digest(), dtype='uint32')[0] # we convert the first 32 bits to unsigned int
-    GRP_DAY_LMT = np.r_[20] # maximum nt in GRASP build, each site seg will have this many unique datenums
+    GRP_DAY_LMT = np.r_[120] # maximum nt in GRASP build, each site seg will have this many unique datenums
 
     
     def __init__(self, loadPath=None):
@@ -30,7 +31,8 @@ class modaeroDB(object):
             self.mod_loc = np.array([]).reshape(0,self.MOD_LOC_IND.shape[0])
             self.aero_loc = np.array([]).reshape(0,self.AERO_LOC_IND.shape[0])
             self.geom = np.array([]).reshape(0,self.GEOM_IND.shape[0])
-            self.sorted = False                
+            self.sorted = False    
+        self.siteSegment = [] # grouped data is after saving stage
         
     def readFile(self, filePath):
         warnings.filterwarnings('ignore', message="some errors were detected") # HDF load error lines will produce warnings
@@ -64,28 +66,54 @@ class modaeroDB(object):
         self.geom = self.geom[srtInd,:]
         self.sorted = True
     
-    def groupData(self):
-        siteSegment = []
+    def groupData(self, siteIDFrc=False):
         if not self.sorted:
             self.sortData()
-        siteList = np.unique(self.aero_loc[:,0])
+        if siteIDFrc:
+            siteList = [siteIDFrc]         
+        else:
+            siteList = np.unique(self.aero_loc[:,0])
         datenumSep = np.diff(self.mod_loc[:, -1]) # below won't catch same site on consecutive orbits,last of orbit != 0
         datenumSep[np.abs(np.diff(self.aero_loc[:,0]))>0] = -1 # in case same time registers at two sites
         for siteID in siteList:
             nowInd = np.nonzero(self.aero_loc[:,0] == siteID)[0]
+            assert (len(nowInd)>0), "No sites found with ID %d" % siteID
             AEROloc = self.aero_loc[nowInd[0],:]
             if not np.array_equiv(AEROloc, self.aero_loc[nowInd,:]):
                 warnings.warn('At least two AERONET site LAT/LON/ELEV were not the same within a single segment!')
-            siteSegment.append(aeroSite(AEROloc, self.MOD_LAMDA, self.AERO_LAMDA)) # Only one site per segment
+            self.siteSegment.append(aeroSite(AEROloc, self.MOD_LAMDA, self.AERO_LAMDA)) # Only one site per segment
             for i in nowInd:
-                siteSegment[-1].addMeas(self.rflct[i,:], self.aod[i,:], self.mod_loc[i,:], self.geom[i,:])
-                numDays = len(np.unique(np.atleast_2d(siteSegment[-1].mod_loc)[:,4]))
+                self.siteSegment[-1].addMeas(self.rflct[i,:], self.aod[i,:], self.mod_loc[i,:], self.geom[i,:])
+                numDays = len(np.unique(np.atleast_2d(self.siteSegment[-1].mod_loc)[:,4]))
                 if (numDays == self.GRP_DAY_LMT) and (datenumSep[i] != 0) and (i != nowInd[-1]):
-                    siteSegment.append(aeroSite(AEROloc, self.MOD_LAMDA, self.AERO_LAMDA)) # This segment is full, start a new one
+                    self.siteSegment.append(aeroSite(AEROloc, self.MOD_LAMDA, self.AERO_LAMDA)) # This segment is full, start a new one
             # code to prevent siteSegments with only a couple days would go here
-        [seg.condenceAOD() for seg in siteSegment] # Remove unused AOD wavelengths
-        return siteSegment
-                                         
+        [seg.condenceAOD() for seg in self.siteSegment] # Remove unused AOD wavelengths
+        return self.siteSegment
+                             
+    def graspPackData(self, pathYAML, dirGRASP=False, orbHghtKM=713, specInd=slice(None)): # THIS WILL CHANGE FOR ix>1, land and AERONET included
+        msTyp = [41]; # normalized radiances
+        lndPrct = 0; # b/c ocean only for now
+        graspObjs = []
+        lambdaUsed = slice(0,7) # only use first 7 lambda for now
+        for seg in self.siteSegment[specInd]:
+            gObj = graspRun(pathYAML, orbHghtKM, dirGRASP)
+            gObj.aodAERO = np.array([]).reshape(0, seg.AERO_LAMDA.shape[0]) # custom variable to save AOD
+            unqDTs = np.unique(seg.mod_loc[:,-1])
+            for unqDT in unqDTs:
+                nowInd = np.nonzero(seg.mod_loc[:,-1] == unqDT)[0]
+                nowPix = pixel(unqDT, 1, 1, seg.aero_loc[3], seg.aero_loc[2], seg.aero_loc[1], lndPrct)
+                sza = np.mean(seg.geom[nowInd, 0])
+                thtv = [np.mean(seg.geom[nowInd, 2])]
+                phi = [np.mean(seg.geom[nowInd, 1] - seg.geom[nowInd, 3])]
+                gObj.aodAERO = np.vstack([gObj.aodAERO, seg.aod[nowInd[0],:]])
+                for i,wl in enumerate(seg.MOD_LAMDA[lambdaUsed]):
+                     msrmnts = [np.mean(seg.rflct[nowInd,i])]
+                     nowPix.addMeas(wl, msTyp, 1, sza, thtv, phi, msrmnts)
+                gObj.addPix(nowPix)
+            graspObjs.append(gObj)
+        return graspObjs
+            
     def saveData(self, filePath):
         np.savez_compressed(filePath, rflct=self.rflct, aod=self.aod, mod_loc=self.mod_loc, aero_loc=self.aero_loc, geom=self.geom, set_hash=self.SET_HASH)        
         
