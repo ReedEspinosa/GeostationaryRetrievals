@@ -99,8 +99,8 @@ class modaeroDB(object):
         for seg in self.siteSegment[specInd]:
             gObj = graspRun(pathYAML, orbHghtKM, dirGRASP)
             gObj.aodAERO = np.array([]).reshape(0, seg.AERO_LAMDA.shape[0]) # custom variable to save AOD
-#            unqDTs = np.unique(seg.mod_loc[:,-1])
-            unqDTs = np.unique(seg.mod_loc[:,-1])[0:7] # hack to make run faster
+            unqDTs = np.unique(seg.mod_loc[:,-1])
+#            unqDTs = np.unique(seg.mod_loc[:,-1])[0:3] # hack to make run faster
             for unqDT in unqDTs:
                 nowInd = np.nonzero(seg.mod_loc[:,-1] == unqDT)[0]
                 nowPix = pixel(unqDT, 1, 1, seg.aero_loc[3], seg.aero_loc[2], seg.aero_loc[1], lndPrct)
