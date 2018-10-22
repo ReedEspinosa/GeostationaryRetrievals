@@ -69,7 +69,7 @@ class modaeroDB(object):
     def groupData(self, siteIDFrc=False):
         if not self.sorted:
             self.sortData()
-        if siteIDFrc:
+        if siteIDFrc and type(siteIDFrc) is not list:
             siteList = [siteIDFrc]         
         else:
             siteList = np.unique(self.aero_loc[:,0])
@@ -91,12 +91,12 @@ class modaeroDB(object):
         [seg.condenceAOD() for seg in self.siteSegment] # Remove unused AOD wavelengths
         return self.siteSegment
                              
-    def graspPackData(self, pathYAML, dirGRASP=False, orbHghtKM=713, specInd=slice(None)): # THIS WILL CHANGE FOR ix>1, land and AERONET included
+    def graspPackData(self, pathYAML, orbHghtKM=713, dirGRASP=False): # THIS WILL CHANGE FOR ix>1, land and AERONET included
         msTyp = [41]; # normalized radiances
         lndPrct = 0; # b/c ocean only for now
         graspObjs = []
         lambdaUsed = slice(0,7) # only use first 7 lambda for now
-        for seg in self.siteSegment[specInd]:
+        for seg in self.siteSegment:
             gObj = graspRun(pathYAML, orbHghtKM, dirGRASP)
             gObj.aodAERO = np.array([]).reshape(0, seg.AERO_LAMDA.shape[0]) # custom variable to save AOD
             unqDTs = np.unique(seg.mod_loc[:,-1])
