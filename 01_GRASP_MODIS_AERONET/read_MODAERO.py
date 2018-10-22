@@ -69,8 +69,11 @@ class modaeroDB(object):
     def groupData(self, siteIDFrc=False):
         if not self.sorted:
             self.sortData()
-        if siteIDFrc and type(siteIDFrc) is not list:
-            siteList = [siteIDFrc]         
+        if siteIDFrc:
+            if type(siteIDFrc) is not list:
+                siteList = [siteIDFrc]
+            else:
+                siteList = siteIDFrc
         else:
             siteList = np.unique(self.aero_loc[:,0])
         datenumSep = np.diff(self.mod_loc[:, -1]) # below won't catch same site on consecutive orbits,last of orbit != 0

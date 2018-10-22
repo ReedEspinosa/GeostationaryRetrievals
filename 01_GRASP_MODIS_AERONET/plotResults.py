@@ -64,7 +64,7 @@ aod550AERO = aod550AERO[~np.isnan(aod550AERO)]
 # compare with AERONET
 line = plt.figure()
 #plt.plot(aod550AERO, aod550GRASPcln, '.')
-plt.scatter(aod550AERO, aod550GRASPcln, c=wndSpdCln)
+plt.scatter(aod550AERO, aod550GRASPcln, c=wndSpdCln, marker='.')
 #plt.scatter(aod550AERO, aod550GRASPcln, c=h20Alb550Cln)
 plt.plot(np.r_[0, maxAOD], np.r_[0, maxAOD], 'k')
 plt.xlabel("AOD AERONET (550nm)")

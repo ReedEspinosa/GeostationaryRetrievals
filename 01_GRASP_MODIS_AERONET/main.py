@@ -23,8 +23,8 @@ binPathGRASP = '/home/respinosa/ReedWorking/Local_Code_MacBook/grasp_open/build/
 
 maxCPUs = 8 # max simaltanous instances of GRASP
 orbHght = 713 # km
-#siteID 9=Wallops, 210=Nauru, 106=Ascension Island, 919=Azores, 58=Cape Verde
-siteID = 210 # Nauru, this can be int or list (not numpy array)
+#siteID 9=Wallops, 210=Nauru, 106=Ascension Island, 919=Azores, 58=Cape Verde, Honolulu=97, Amr. Somoa=1185, Midway=278, San Cristobal=243
+siteID = [210, 9, 106, 919, 58, 97, 1185, 278, 243] # can be int or list (not numpy array)
 saveNPZ = False
 savePath = pathPath = os.path.join(basePath, 'Working/MODAERO_OceanMODall_Uranus.pkl')
 dirPath = pathPath = os.path.join(basePath, 'Remote_Sensing_Projects/GRASP_MODIS/ocean/MOD*.out')
