@@ -10,7 +10,7 @@ sys.path.append(os.path.join("..", "GRASP_PythonUtils"))
 from miscFunctions import angstrmIntrp
 
 #dillFN = '/Users/wrespino/Synced/Working/MODAERO_16binLoose.pkl'
-dillFN = '/Users/wrespino/Synced/Working/MODAERO_OceanMODall_Uranus.pkl'
+dillFN = '/Users/wrespino/Synced/Working/MODAERO_OceanMODall_Uranus_extraH20.pkl'
 
 maxAOD = 2
 
@@ -33,6 +33,8 @@ h20AlbAll = np.array([]).reshape(0, Nlmbd) # index 1 will be 550nm
 wndSpd = np.array([])
 dateDays = np.array([]) 
 dVdlnr = np.array([]).reshape(0, Npsd)
+volFMF = np.array([])
+volTot = np.array([])
 rv = np.array([]).reshape(0, Nmodes)
 sigma = np.array([]).reshape(0, Nmodes)
 sphGRASP = np.array([]).reshape(0, Nmodes)
@@ -44,6 +46,8 @@ for rsltRun in rslts: # analysis:ignore (it was loaded)
         iriGRASP = np.append(iriGRASP, rslt['k'][lmbdInd]) #      fix needed here and in reading of GRASP output
         sphGRASP = np.vstack([sphGRASP, rslt['sph']])
         dVdlnr = np.vstack([dVdlnr, rslt['vol']@rslt['dVdlnr']]) # scale to um^3/um^2 & sum multiple modes
+        volFMF = np.append(volFMF, rslt['vol'][0]/(np.sum(rslt['vol']))) # technically this is "first mode fraction"
+        volTot = np.append(volTot, np.sum(rslt['vol'])) # technically this is "first mode fraction"
         h20AlbAll = np.vstack([h20AlbAll, rslt['wtrSurf'][0]])    
         wndSpd = np.append(wndSpd, (rslt['wtrSurf'][2][1]-0.003)/0.00512)
         tDelta = (rslt['datetime'] - dt.datetime(2000, 1, 1, 0, 0))
@@ -74,8 +78,9 @@ aodAERO = np.array(aodAERO)
 aodGRASP = np.array(aodGRASP)
 aodGRASPcln = aodGRASP[~np.isnan(aodAERO)]
 
-clrVar = wndSpd[~np.isnan(aodAERO)] # WIND SPEED
+#clrVar = wndSpd[~np.isnan(aodAERO)] # WIND SPEED
 #clrVar = h20AlbAll[~np.isnan(aodAERO), 0] # OCEAN ALBEDO, last ind. wavelength
+clrVar = volFMF[~np.isnan(aodAERO)] # FIRST MODE FRACTION (by volume)
 clrVar[clrVar < np.percentile(clrVar,2)] = np.percentile(clrVar,2)
 clrVar[clrVar > np.percentile(clrVar,98)] = np.percentile(clrVar,98)
 #clrVar = siteID[~np.isnan(aodAERO)]

@@ -278,13 +278,13 @@ retrieval:
             retrieved: true
             mode[1]:    
                 initial_guess:                       #1      #2      #3      #4      #5      #6      #7       
-                    value:                          [0.037,   0.025,   0.013,   0.004, 0.002,  0.002,  0.002  ]
+                    value:                          [0.045,   0.030,   0.013,   0.004, 0.002,  0.002,  0.002  ]
                     min:                            [0.0001, 0.0001, 0.0001, 0.0001, 0.00001, 0.00001, 0.00001 ]
-                    max:                            [0.06,   0.05,   0.05,   0.05,   0.05,   0.05,   0.05   ]
+                    max:                            [0.065,   0.05,   0.05,   0.05,   0.05,   0.05,   0.05   ]
                     index_of_wavelength_involved:   [1,      2,      3,      4,      5,      6,      7      ]
                 single_pixel:
                     a_priori_estimates:
-                        lagrange_multiplier:      [3.0e-4, 3.0e-4, 3.0e-4, 3.0e-4, 3.0e-4, 3.0e-4, 3.0e-4]
+                        lagrange_multiplier:      [1.0e-3, 1.0e-3, 1.0e-3, 1.0e-3, 1.0e-3, 1.0e-3, 1.0e-3]
                     smoothness_constraints:
                         difference_order: 1
                         lagrange_multiplier: 1.0e-3
