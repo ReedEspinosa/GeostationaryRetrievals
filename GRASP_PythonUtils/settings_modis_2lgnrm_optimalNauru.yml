@@ -154,13 +154,13 @@ retrieval:
             retrieved: true
             mode[1]: 
                 initial_guess: 
-                    value:                        [0.015]
+                    value:                        [0.006] #FMF=~0.1
                     min:                          [0.002]
                     max:                          [2.000]
                     index_of_wavelength_involved: [0]
                 single_pixel:
                     a_priori_estimates:
-                        lagrange_multiplier:      [1.0e-4]
+                        lagrange_multiplier:      [5.0e-4]
                     smoothness_constraints:
                         difference_order: 0
                         lagrange_multiplier: 0.0
@@ -174,13 +174,13 @@ retrieval:
                        lagrange_multiplier_of_T_variability: 1.0e-6
             mode[2]: 
                 initial_guess: 
-                    value:                        [0.015]
+                    value:                        [0.075]
                     min:                          [0.002]
                     max:                          [2.00]
                     index_of_wavelength_involved: [0]
                 single_pixel:
                     a_priori_estimates:
-                        lagrange_multiplier:      [1.0e-4]
+                        lagrange_multiplier:      [1.0e-5]
                     smoothness_constraints:
                         difference_order: 0
                         lagrange_multiplier: 0.0
