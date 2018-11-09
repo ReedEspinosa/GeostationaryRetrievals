@@ -108,11 +108,12 @@ class modaeroDB(object):
                 nowInd = np.nonzero(seg.mod_loc[:,-1] == unqDT)[0]
                 nowPix = pixel(unqDT, 1, 1, seg.aero_loc[3], seg.aero_loc[2], seg.aero_loc[1], lndPrct)
                 sza = np.mean(seg.geom[nowInd, 0])
+                mu = np.cos(sza*np.pi/180)
                 thtv = [np.mean(seg.geom[nowInd, 2])]
                 phi = [np.mean(seg.geom[nowInd, 1] - seg.geom[nowInd, 3])]
                 gObj.aodAERO = np.vstack([gObj.aodAERO, seg.aod[nowInd[0],:]])
                 for i,wl in enumerate(seg.MOD_LAMDA[lambdaUsed]):
-                     msrmnts = [np.mean(seg.rflct[nowInd,i])]
+                     msrmnts = [np.mean(seg.rflct[nowInd,i])*mu] # MODIS R=L/FO*pi/mu0; GRASP R=L/FO*pi
                      nowPix.addMeas(wl, msTyp, 1, sza, thtv, phi, msrmnts)
                 gObj.addPix(nowPix)
             graspObjs.append(gObj)
