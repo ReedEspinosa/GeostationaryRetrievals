@@ -8,16 +8,19 @@ import os
 import sys
 sys.path.append(os.path.join("..", "GRASP_PythonUtils"))
 from miscFunctions import angstrmIntrp
+from scipy.stats import gaussian_kde
 
-#dillFN = '/Users/wrespino/Synced/Working/MODAERO_16binLoose.pkl'
-dillFN = '/Users/wrespino/Synced/Working/MODAERO_OceanMODall_Uranus_extraH20.pkl'
+dillFN = '/Users/wrespino/Synced/Working/MODAERO_retrievalPickles/MODAERO_GRASPref_updatedYAML3.pkl'
+
 
 maxAOD = 2
 
-siteID_plot = 106 # False for all sites (doesn't apply to AOD)
-ttleNm = 'Ascension Island'
+siteID_plot = 210 # False for all sites (doesn't apply to AOD)
+ttleNm = 'Wallops & Nauru, MODIS R=L/FO*pi/mu0'
 lmbdInd = 3 # [0.469, 0.555, 0.645, 0.8585, 1.24, 1.64, 2.13]
 AODonly = True
+difVSclrPlot = False;
+logLogAOD = True # plot AOD on log-log plot
 
 dill.load_session(dillFN)
 radii = rslts[0][0]['r'][0] # assume the same radii are used in every retrieval; analysis:ignore (it was loaded)
@@ -42,8 +45,8 @@ sphGRASP = np.array([]).reshape(0, Nmodes)
 for rsltRun in rslts: # analysis:ignore (it was loaded)
     for rslt in rsltRun:
         aodGRASP = np.append(aodGRASP, rslt['aod'][lmbdInd])
-        rriGRASP = np.append(rriGRASP, rslt['n'][lmbdInd]) # BUG: the following three are only fine mode values
-        iriGRASP = np.append(iriGRASP, rslt['k'][lmbdInd]) #      fix needed here and in reading of GRASP output
+        rriGRASP = np.append(rriGRASP, rslt['n'][0,lmbdInd]) # BUG: these two are only fine mode values
+        iriGRASP = np.append(iriGRASP, rslt['k'][1,lmbdInd]) #      fix needed here and in reading of GRASP output
         sphGRASP = np.vstack([sphGRASP, rslt['sph']])
         dVdlnr = np.vstack([dVdlnr, rslt['vol']@rslt['dVdlnr']]) # scale to um^3/um^2 & sum multiple modes
         volFMF = np.append(volFMF, rslt['vol'][0]/(np.sum(rslt['vol']))) # technically this is "first mode fraction"
@@ -78,26 +81,44 @@ aodAERO = np.array(aodAERO)
 aodGRASP = np.array(aodGRASP)
 aodGRASPcln = aodGRASP[~np.isnan(aodAERO)]
 
+# THESE ALL COLOR THE POINTS BY SOME AUX VARIABLE, TO COLOR BY DENSITY SEE BELOW
 #clrVar = wndSpd[~np.isnan(aodAERO)] # WIND SPEED
-#clrVar = h20AlbAll[~np.isnan(aodAERO), 0] # OCEAN ALBEDO, last ind. wavelength
-clrVar = volFMF[~np.isnan(aodAERO)] # FIRST MODE FRACTION (by volume)
+clrVar = h20AlbAll[~np.isnan(aodAERO), 0] # OCEAN ALBEDO, last ind. wavelength
+#clrVar = volFMF[~np.isnan(aodAERO)] # FIRST MODE FRACTION (by volume)
 clrVar[clrVar < np.percentile(clrVar,2)] = np.percentile(clrVar,2)
 clrVar[clrVar > np.percentile(clrVar,98)] = np.percentile(clrVar,98)
-#clrVar = siteID[~np.isnan(aodAERO)]
+
 aodAERO = aodAERO[~np.isnan(aodAERO)]
 
+#COLOR BY DENSITY
+#xy = np.log(np.vstack([aodAERO,aodGRASPcln])) if logLogAOD else np.vstack([aodAERO,aodGRASPcln])
+#clrVar = gaussian_kde(xy)(xy)
+
 line = plt.figure()
-plt.scatter(aodAERO, aodGRASPcln, c=clrVar, marker='.')
-plt.plot(np.r_[0, maxAOD], np.r_[0, maxAOD], 'k')
+ax = plt.scatter(aodAERO, aodGRASPcln, c=clrVar, marker='.')
+pax = plt.plot(np.r_[0, maxAOD], np.r_[0, maxAOD], 'k')
 plt.xlabel("AOD AERONET" + lmbdStr)
 plt.ylabel("AOD MODIS/GRASP" + lmbdStr)
-plt.xlim([0, maxAOD])
-plt.ylim([0, maxAOD])
+plt.xlim([0.01, maxAOD])
+plt.ylim([0.01, maxAOD])
 Rcoef = np.corrcoef(aodAERO, aodGRASPcln)[0,1]
 RMSE = np.sqrt(np.mean((aodAERO - aodGRASPcln)**2))
 textstr = 'N=%d\nR=%.3f\nRMS=%.3f\n'%(len(aodAERO), Rcoef, RMSE)
-plt.text(0.7*maxAOD, 0.03, textstr, fontsize=12)
+if logLogAOD:
+    plt.text(0.2*maxAOD, 0.015, textstr, fontsize=12)
+    plt.yscale('log')
+    plt.xscale('log')
+else:
+    plt.text(0.7*maxAOD, 0.03, textstr, fontsize=12)
 plt.title('All Sites')
+
+if difVSclrPlot:
+    line = plt.figure()
+    ax = plt.scatter(aodGRASPcln-aodAERO, clrVar, marker='.')
+    plt.xlabel("AOD: MODIS/GRASP - AERONET" + lmbdStr)
+    plt.ylabel("Color Parameter")
+    plt.xlim([-maxAOD/4, maxAOD/4])
+    plt.title('All Sites')
 
 if AODonly: sys.exit()
 # plot PSD
@@ -128,8 +149,8 @@ ax[1].hist(iriGRASP[pltInd], 60)
 ax[1].set_title(ttleNm)
 ax[1].set_xlabel("IRI" + lmbdStr)
 # plot SPH PDF
-ax[2].hist(sphGRASP[pltInd,0], 30) # ONLY FINE MODE
-ax[2].set_xlabel("Spherical Fraction")
+ax[2].hist(sphGRASP[pltInd,1], 30) # ONLY COARSE MODE
+ax[2].set_xlabel("Coarse Mode Spherical Fraction")
 
 # plot H20 Albedo Time Series
 fig, ax = plt.subplots(nrows=3, ncols=1, figsize=(5, 10))
