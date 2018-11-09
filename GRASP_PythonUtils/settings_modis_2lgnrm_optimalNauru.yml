@@ -38,11 +38,11 @@ retrieval:
         noise[1]:
             standard_deviation_synthetic: 0.0
             error_type:   relative
-            standard_deviation:  0.5
+            standard_deviation:  5.5
             measurement_type[1]:
                 type: I
                 index_of_wavelength_involved: [ 1]
-        noise[1]:
+        noise[2]:
             standard_deviation_synthetic: 0.0
             error_type:   relative
             standard_deviation:  0.03
