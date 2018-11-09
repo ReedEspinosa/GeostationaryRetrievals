@@ -38,17 +38,10 @@ retrieval:
         noise[1]:
             standard_deviation_synthetic: 0.0
             error_type:   relative
-            standard_deviation:  5.5
-            measurement_type[1]:
-                type: I
-                index_of_wavelength_involved: [ 1]
-        noise[2]:
-            standard_deviation_synthetic: 0.0
-            error_type:   relative
             standard_deviation:  0.03
             measurement_type[1]:
                 type: I
-                index_of_wavelength_involved: [ 2, 3, 4, 5, 6, 7 ]
+                index_of_wavelength_involved: [1, 2, 3, 4, 5, 6, 7 ]
 
     radiative_transfer:
         number_of_layers: 50 # 50->5 ~5% AOD change, 15% speed up
@@ -117,9 +110,9 @@ retrieval:
             retrieved: true
             mode[1]: 
                 initial_guess: 
-                    value:                        [0.11,    0.5]
-                    min:                           [0.08,    0.4]
-                    max:                          [0.22,   0.6]
+                    value:                        [0.14,    0.5]
+                    min:                           [0.12,    0.4]
+                    max:                          [0.16,   0.6]
                     index_of_wavelength_involved: [0,     0]
                 single_pixel:
                     a_priori_estimates:
@@ -205,10 +198,10 @@ retrieval:
             retrieved: true
             mode[1]:
                 initial_guess:                                        #1         #2        #3        #4        #5        #6       #7
-                    value:                                               [1.42,     1.42,    1.42,   1.42,   1.42,     1.4,   1.4    ]
-                    min:                                                  [1.33,        1.33,      1.33,     1.33,     1.33,       1.33,   1.33    ]
-                    max:                                                 [1.5,     1.5,    1.5,   1.5,   1.5,     1.5,   1.5    ]
-                    index_of_wavelength_involved:   [1,          2,         3,         4,         5,         6,        7  ] 
+                    value:                                               [1.41,       1.41,      1.41,     1.41,   1.41,     1.4,     1.39    ]
+                    min:                                                  [1.4,         1.4,       1.4,       1.4,     1.4,       1.38,   1.38    ]
+                    max:                                                 [1.42,      1.42,     1.42,     1.42,   1.42,     1.41,   1.40    ]
+                    index_of_wavelength_involved:   [1,           2,         3,         4,         5,         6,        7  ] 
                 single_pixel:
                     smoothness_constraints:
                         difference_order: 1
@@ -285,13 +278,13 @@ retrieval:
             retrieved: true
             mode[1]:    
                 initial_guess:                       #1      #2      #3      #4      #5      #6      #7       
-                    value:                          [0.022,   0.015,   0.0065,   0.003, 0.002,  0.002,  0.002  ]
+                    value:                          [0.015,   0.01,   0.0065,   0.0035, 0.003,  0.0025,  0.002  ]
                     min:                            [0.0001, 0.0001, 0.0001, 0.0001, 0.00001, 0.00001, 0.00001 ]
                     max:                            [0.065,   0.05,   0.05,   0.05,   0.05,   0.05,   0.05   ]
                     index_of_wavelength_involved:   [1,      2,      3,      4,      5,      6,      7      ]
                 single_pixel:
                     a_priori_estimates:
-                        lagrange_multiplier:      [5.0e-4, 5.0e-4, 5.0e-4, 5.0e-4, 5.0e-4, 5.0e-4, 5.0e-4]
+                        lagrange_multiplier:      [2.0e-4, 2.0e-4, 2.0e-4, 2.0e-4, 2.0e-4, 2.0e-4, 2.0e-4]
                     smoothness_constraints:
                         difference_order: 1
                         lagrange_multiplier: 5.0e-3
@@ -331,7 +324,7 @@ retrieval:
                     index_of_wavelength_involved:   [ 1,      2,      3,      4,      5,      6,      7 ]
                 single_pixel:
                     a_priori_estimates:
-                        lagrange_multiplier:      [1.0e-5, 1.0e-5, 1.0e-5, 1.0e-5, 1.0e-5, 1.0e-5, 1.0e-5]
+                        lagrange_multiplier:      [5.0e-5, 5.0e-5, 5.0e-5, 5.0e-5, 5.0e-5, 5.0e-5, 5.0e-5]
                     smoothness_constraints:
                         difference_order: 1
                         lagrange_multiplier: 10.0e0

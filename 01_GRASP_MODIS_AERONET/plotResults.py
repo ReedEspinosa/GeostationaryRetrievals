@@ -10,7 +10,7 @@ sys.path.append(os.path.join("..", "GRASP_PythonUtils"))
 from miscFunctions import angstrmIntrp
 from scipy.stats import gaussian_kde
 
-dillFN = '/Users/wrespino/Synced/Working/MODAERO_retrievalPickles/MODAERO_GRASPref_updatedYAML3.pkl'
+dillFN = '/Users/wrespino/Synced/Working/MODAERO_retrievalPickles/MODAERO_GRASPref_updatedYAML5.pkl'
 
 
 maxAOD = 2
@@ -18,8 +18,10 @@ maxAOD = 2
 siteID_plot = 210 # False for all sites (doesn't apply to AOD)
 ttleNm = 'Wallops & Nauru, MODIS R=L/FO*pi/mu0'
 lmbdInd = 3 # [0.469, 0.555, 0.645, 0.8585, 1.24, 1.64, 2.13]
+#biasCrct = [1.85, 1.32, 1, 0.62]
+biasCrct = [1, 1, 1, 1]
 AODonly = True
-difVSclrPlot = False;
+difVSclrPlot = True;
 logLogAOD = True # plot AOD on log-log plot
 
 dill.load_session(dillFN)
@@ -79,14 +81,19 @@ assert (aodAERO.shape[0] == aodGRASP.shape[0]), 'rslts and DB.siteSegment contai
 # compare with AERONET
 aodAERO = np.array(aodAERO)
 aodGRASP = np.array(aodGRASP)
-aodGRASPcln = aodGRASP[~np.isnan(aodAERO)]
+aodGRASPcln = aodGRASP[~np.isnan(aodAERO)]/biasCrct[lmbdInd]
 
 # THESE ALL COLOR THE POINTS BY SOME AUX VARIABLE, TO COLOR BY DENSITY SEE BELOW
 #clrVar = wndSpd[~np.isnan(aodAERO)] # WIND SPEED
-clrVar = h20AlbAll[~np.isnan(aodAERO), 0] # OCEAN ALBEDO, last ind. wavelength
+#clrVar = h20AlbAll[~np.isnan(aodAERO), 3] # OCEAN ALBEDO, last ind. wavelength
 #clrVar = volFMF[~np.isnan(aodAERO)] # FIRST MODE FRACTION (by volume)
-clrVar[clrVar < np.percentile(clrVar,2)] = np.percentile(clrVar,2)
-clrVar[clrVar > np.percentile(clrVar,98)] = np.percentile(clrVar,98)
+#clrVar = sphGRASP[~np.isnan(aodAERO),1] # SPH FRACTION (mode select left)
+#clrVar = rriGRASP[~np.isnan(aodAERO)] # RRI (Mode selected above)
+#clrVar = iriGRASP[~np.isnan(aodAERO)] # IRI (Mode selected above)
+clrVar = rv[~np.isnan(aodAERO),1] # rv (mode select left)
+#clrVar = sigma[~np.isnan(aodAERO),0] # sigma (mode select left)
+#clrVar[clrVar < np.percentile(clrVar,2)] = np.percentile(clrVar,2)
+#clrVar[clrVar > np.percentile(clrVar,98)] = np.percentile(clrVar,98)
 
 aodAERO = aodAERO[~np.isnan(aodAERO)]
 
@@ -114,10 +121,10 @@ plt.title('All Sites')
 
 if difVSclrPlot:
     line = plt.figure()
-    ax = plt.scatter(aodGRASPcln-aodAERO, clrVar, marker='.')
+    ax = plt.scatter(aodGRASPcln/aodAERO, clrVar, marker='.')
     plt.xlabel("AOD: MODIS/GRASP - AERONET" + lmbdStr)
     plt.ylabel("Color Parameter")
-    plt.xlim([-maxAOD/4, maxAOD/4])
+    plt.xlim([0.3, 3])
     plt.title('All Sites')
 
 if AODonly: sys.exit()
