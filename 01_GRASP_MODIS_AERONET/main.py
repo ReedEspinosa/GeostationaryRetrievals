@@ -28,7 +28,7 @@ siteID = [210, 9, 106, 919, 58, 97, 1185, 278, 243] # can be int or list (not nu
 #siteID = [106, 210, 278] # can be int or list (not numpy array)
 saveNPZ = False
 
-savePath = pathPath = os.path.join(basePath, 'Working/MODAERO_retrievalPickles/MODAERO_GRASPref_updatedYAML5.pkl')
+savePath = pathPath = os.path.join(basePath, 'Working/MODAERO_retrievalPickles/MODAERO_GRASPref_updatedYAML6.pkl')
 dirPath = pathPath = os.path.join(basePath, 'Remote_Sensing_Projects/GRASP_MODIS/ocean/MOD*.out')
 npzPath = pathPath = os.path.join(basePath, 'Remote_Sensing_Projects/GRASP_MODIS/Ocean_MOD04_L2_C61.out.npz')
 pathYAML = pathPath = os.path.join(basePath, 'Remote_Sensing_Analysis/GRASP_PythonUtils/settings_modis_2lgnrm_optimalNauru.yml')
