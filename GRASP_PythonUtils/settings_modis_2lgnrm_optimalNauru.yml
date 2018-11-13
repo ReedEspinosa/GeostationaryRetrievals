@@ -29,7 +29,6 @@ retrieval:
                 
     regime_of_measurement_fitting:
         radiance: radiances 
-#        polarization: relative_polarization_components
             
     regime_of_multipixel_constraints: 
         inversion_regime: multi_pixel   
@@ -38,17 +37,10 @@ retrieval:
         noise[1]:
             standard_deviation_synthetic: 0.0
             error_type:   relative
-            standard_deviation:  1.00
-            measurement_type[1]:
-                type: I
-                index_of_wavelength_involved: [1 ]
-        noise[2]:
-            standard_deviation_synthetic: 0.0
-            error_type:   relative
             standard_deviation:  0.03
             measurement_type[1]:
                 type: I
-                index_of_wavelength_involved: [2, 3, 4, 5, 6, 7 ]
+                index_of_wavelength_involved: [1, 2, 3, 4, 5, 6, 7 ]
 
     radiative_transfer:
         number_of_layers: 50 # 50->5 ~5% AOD change, 15% speed up
@@ -68,7 +60,7 @@ retrieval:
 
     phase_matrix:
         size_binning_method_for_triangle_bins: logarithm
-        number_of_elements: 1 # 1 & 2 (same) change shortwave AOD ~10%, about x2 speed up
+        number_of_elements: 4 # 1 & 2 (same) change shortwave AOD ~10%, about x2 speed up
         kernels_folder: "KERNELS_BASE/"
         radius:
             mode[1]:
@@ -161,8 +153,8 @@ retrieval:
             retrieved: true
             mode[1]: 
                 initial_guess: 
-                    value:                        [0.015]
-                    min:                          [0.002]
+                    value:                        [0.0015]
+                    min:                          [0.0002]
                     max:                          [2.000]
                     index_of_wavelength_involved: [0]
                 single_pixel:
@@ -182,7 +174,7 @@ retrieval:
             mode[2]: 
                 initial_guess: 
                     value:                        [0.015]
-                    min:                          [0.002]
+                    min:                          [0.0002]
                     max:                          [2.00]
                     index_of_wavelength_involved: [0]
                 single_pixel:
