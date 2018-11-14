@@ -14,7 +14,7 @@ input:
 output:
     segment:
         function: classic
-        stream: screen #harp_inversion_test.txt
+        stream: harp_inversionRslts.txt 
         
 retrieval:
     general:
