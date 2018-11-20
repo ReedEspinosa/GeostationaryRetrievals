@@ -3,9 +3,9 @@
 
 import numpy as np
 
-def angstrmIntrp(lmbd, tau, lmbdTrgt):
-    tau = tau[lmbd.argsort()]
-    lmbd.sort()
+def angstrmIntrp(lmbdIn, tau, lmbdTrgt):
+    tau = tau[lmbdIn.argsort()]
+    lmbd = lmbdIn[lmbdIn.argsort()]
     assert (lmbdTrgt >= lmbd.min() and lmbdTrgt <= lmbd.max()), "This function will not extroplate, lmbdTrgt must fall between two values."
     if lmbdTrgt==lmbd[0]:
         return tau[0]
