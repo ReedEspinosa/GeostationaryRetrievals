@@ -7,21 +7,21 @@ import dill
 import os
 import sys
 sys.path.append(os.path.join("..", "GRASP_PythonUtils"))
-from miscFunctions import angstrmIntrp
+from miscFunctions import angstrmIntrp, angstrm
 from scipy.stats import gaussian_kde
 
-dillFN = '/Users/wrespino/Synced/Working/MODAERO_retrievalPickles/MODAERO_GRASPref_updatedYAML5.pkl'
+dillFN = '/Users/wrespino/Synced/Working/MODAERO_retrievalPickles/MODAERO_GRASPref_updatedYAMLX.pkl'
 
 
 maxAOD = 2
 
-siteID_plot = 210 # False for all sites (doesn't apply to AOD)
-ttleNm = 'Wallops & Nauru, MODIS R=L/FO*pi/mu0'
-lmbdInd = 3 # [0.469, 0.555, 0.645, 0.8585, 1.24, 1.64, 2.13]
+siteID_plot = False # False for all sites (doesn't apply to AOD)
+ttleNm = ''
+lmbdInd = 1 # [0.469, 0.555, 0.645, 0.8585, 1.24, 1.64, 2.13]
 #biasCrct = [1.85, 1.32, 1, 0.62]
 biasCrct = [1, 1, 1, 1]
-AODonly = True
-difVSclrPlot = True;
+AODonly = False
+difVSclrPlot = False;
 logLogAOD = True # plot AOD on log-log plot
 
 dill.load_session(dillFN)
@@ -31,6 +31,7 @@ Nmodes = rslts[0][0]['r'].shape[0] # analysis:ignore (it was loaded)
 Npsd = radii.shape[0]
 Nlmbd = wvlngth.shape[0] 
 aodGRASP = np.array([])
+aeGRASP = np.array([])
 rriGRASP = np.array([])
 iriGRASP = np.array([])
 h20Alb550 = np.array([])
@@ -47,12 +48,13 @@ sphGRASP = np.array([]).reshape(0, Nmodes)
 for rsltRun in rslts: # analysis:ignore (it was loaded)
     for rslt in rsltRun:
         aodGRASP = np.append(aodGRASP, rslt['aod'][lmbdInd])
-        rriGRASP = np.append(rriGRASP, rslt['n'][0,lmbdInd]) # BUG: these two are only fine mode values
+        aeGRASP = np.append(aeGRASP, angstrm(wvlngth[[1,3]], rslt['aod'][[1,3]]))
+        rriGRASP = np.append(rriGRASP, rslt['n'][1,lmbdInd]) # BUG: these two are only fine mode values
         iriGRASP = np.append(iriGRASP, rslt['k'][1,lmbdInd]) #      fix needed here and in reading of GRASP output
         sphGRASP = np.vstack([sphGRASP, rslt['sph']])
         dVdlnr = np.vstack([dVdlnr, rslt['vol']@rslt['dVdlnr']]) # scale to um^3/um^2 & sum multiple modes
         volFMF = np.append(volFMF, rslt['vol'][0]/(np.sum(rslt['vol']))) # technically this is "first mode fraction"
-        volTot = np.append(volTot, np.sum(rslt['vol'])) # technically this is "first mode fraction"
+        volTot = np.append(volTot, np.sum(rslt['vol']))
         h20AlbAll = np.vstack([h20AlbAll, rslt['wtrSurf'][0]])    
         wndSpd = np.append(wndSpd, (rslt['wtrSurf'][2][1]-0.003)/0.00512)
         tDelta = (rslt['datetime'] - dt.datetime(2000, 1, 1, 0, 0))
@@ -65,6 +67,7 @@ lmbdStr = ' (%4.2f μm)' % lmbdVal
 
 # AERONET AODs
 aodAERO = np.array([])
+aeAERO = np.array([])
 siteID = np.array([])
 for seg in DB.siteSegment: # analysis:ignore (it was loaded)
     unqDTs = np.unique(seg.mod_loc[:,-1])
@@ -74,7 +77,11 @@ for seg in DB.siteSegment: # analysis:ignore (it was loaded)
             aodAERO = np.append(aodAERO, seg.aod[nowInd,-1])
         else:
             aodAERO_lmbd = angstrmIntrp(seg.AERO_LAMDA, seg.aod[nowInd,:], lmbdVal)
-            aodAERO = np.append(aodAERO, aodAERO_lmbd)            
+            aodAERO = np.append(aodAERO, aodAERO_lmbd)
+        grnInd = np.argmin(np.abs(seg.AERO_LAMDA-0.554))
+        nirInd = np.argmin(np.abs(seg.AERO_LAMDA-0.87))
+        aeInd = [grnInd, nirInd]
+        aeAERO = np.append(aeAERO, angstrm(seg.AERO_LAMDA[aeInd], seg.aod[nowInd,aeInd]))
         siteID = np.append(siteID, seg.aero_loc[0])
 assert (aodAERO.shape[0] == aodGRASP.shape[0]), 'rslts and DB.siteSegment contained a different number of pixels!'
 
@@ -82,6 +89,9 @@ assert (aodAERO.shape[0] == aodGRASP.shape[0]), 'rslts and DB.siteSegment contai
 aodAERO = np.array(aodAERO)
 aodGRASP = np.array(aodGRASP)
 aodGRASPcln = aodGRASP[~np.isnan(aodAERO)]/biasCrct[lmbdInd]
+aeNotNan = ~np.isnan(aeAERO)
+aeGRASPcln = aeGRASP[aeNotNan]
+aeGRASPcln = aeGRASPcln[aodAERO[aeNotNan]>0.1]
 
 # THESE ALL COLOR THE POINTS BY SOME AUX VARIABLE, TO COLOR BY DENSITY SEE BELOW
 #clrVar = wndSpd[~np.isnan(aodAERO)] # WIND SPEED
@@ -90,16 +100,18 @@ aodGRASPcln = aodGRASP[~np.isnan(aodAERO)]/biasCrct[lmbdInd]
 #clrVar = sphGRASP[~np.isnan(aodAERO),1] # SPH FRACTION (mode select left)
 #clrVar = rriGRASP[~np.isnan(aodAERO)] # RRI (Mode selected above)
 #clrVar = iriGRASP[~np.isnan(aodAERO)] # IRI (Mode selected above)
-clrVar = rv[~np.isnan(aodAERO),1] # rv (mode select left)
+#clrVar = rv[~np.isnan(aodAERO),1] # rv (mode select left)
 #clrVar = sigma[~np.isnan(aodAERO),0] # sigma (mode select left)
 #clrVar[clrVar < np.percentile(clrVar,2)] = np.percentile(clrVar,2)
 #clrVar[clrVar > np.percentile(clrVar,98)] = np.percentile(clrVar,98)
 
+aeAERO = aeAERO[aeNotNan]
+aeAERO = aeAERO[aodAERO[aeNotNan]>0.1]
 aodAERO = aodAERO[~np.isnan(aodAERO)]
 
 #COLOR BY DENSITY
-#xy = np.log(np.vstack([aodAERO,aodGRASPcln])) if logLogAOD else np.vstack([aodAERO,aodGRASPcln])
-#clrVar = gaussian_kde(xy)(xy)
+xy = np.log(np.vstack([aodAERO,aodGRASPcln])) if logLogAOD else np.vstack([aodAERO,aodGRASPcln])
+clrVar = gaussian_kde(xy)(xy)
 
 line = plt.figure()
 ax = plt.scatter(aodAERO, aodGRASPcln, c=clrVar, marker='.')
@@ -127,6 +139,22 @@ if difVSclrPlot:
     plt.xlim([0.3, 3])
     plt.title('All Sites')
 
+# AE Plots
+xy = np.vstack([aeAERO,aeGRASPcln])
+clrVar = gaussian_kde(xy)(xy)
+
+line = plt.figure()
+ax = plt.scatter(aeAERO, aeGRASPcln, c=clrVar, marker='.')
+pax = plt.plot(np.r_[0, 3], np.r_[0, 3], 'k')
+plt.xlabel("AE AERONET")
+plt.ylabel("AE MODIS/GRASP")
+plt.xlim([-0.35, 2.8])
+plt.ylim([-0.35, 2.8])
+Rcoef = np.corrcoef(aeAERO, aeGRASPcln)[0,1]
+RMSE = np.sqrt(np.mean((aeAERO - aeGRASPcln)**2))
+textstr = 'N=%d\nR=%.3f\nRMS=%.3f\n'%(len(aeAERO), Rcoef, RMSE)
+plt.text(2, 0, textstr, fontsize=12)
+
 if AODonly: sys.exit()
 # plot PSD
 N = len(dVdlnr)
@@ -147,17 +175,33 @@ plt.xlabel("radius (um)")
 plt.ylabel("dV/dlnr (um^3/um^2)")
 
 # plot RRI PDF
-fig, ax = plt.subplots(nrows=1, ncols=3, figsize=(10, 5))
+lowSphInd = sphGRASP[:,1] < 70 # BUG: this ignores plotting site (fine if slice(None))
+fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(7, 5))
 ax[0].hist(rriGRASP[pltInd], 30)
 ax[0].set_xlabel("RRI" + lmbdStr)
-ax[0].set_ylabel("Frequency")
+ax[0].set_ylabel("Frequency (a.u.)")
+ax[0].hist(rriGRASP[lowSphInd], 30)
 # plot IRI PDF
 ax[1].hist(iriGRASP[pltInd], 60)
 ax[1].set_title(ttleNm)
 ax[1].set_xlabel("IRI" + lmbdStr)
+ax[1].hist(iriGRASP[lowSphInd], 60)
+
+# plot rv PDF
+fig, ax = plt.subplots(nrows=1, ncols=3, figsize=(10, 5))
+ax[0].hist(rv[pltInd,1], 30)
+ax[0].set_xlabel("rv")
+ax[0].set_ylabel("Frequency (a.u.)")
+ax[0].hist(rv[lowSphInd,1], 30)
+# plot sigma PDF
+ax[1].hist(sigma[pltInd,1], 60)
+ax[1].set_title(ttleNm)
+ax[1].set_xlabel("σ")
+ax[1].hist(sigma[lowSphInd,1], 60)
 # plot SPH PDF
 ax[2].hist(sphGRASP[pltInd,1], 30) # ONLY COARSE MODE
-ax[2].set_xlabel("Coarse Mode Spherical Fraction")
+ax[2].set_xlabel("Spherical Fraction")
+ax[2].hist(sphGRASP[lowSphInd,1], 30)
 
 # plot H20 Albedo Time Series
 fig, ax = plt.subplots(nrows=3, ncols=1, figsize=(5, 10))
