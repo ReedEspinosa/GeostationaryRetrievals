@@ -33,11 +33,11 @@ retrieval:
         shift_for_applying_logarithm_to_negative_values: 1.1
         
     regime_of_measurement_fitting:
-#           polarization: polarized_reflectance
-           polarization: linear_polarization
+#        polarization: polarized_reflectance
+        polarization: linear_polarization
             
     regime_of_multipixel_constraints: 
-        inversion_regime: multi_pixel   
+        inversion_regime: single_pixel   
 
     noises:
         noise[1]:
@@ -128,8 +128,8 @@ retrieval:
                       index_of_wavelength_involved:   [0,         0,        0,        0,        0,        0,        0,        0 ,       0,        0,        0,        0,        0,        0,        0,        0         ]
                 single_pixel:
                     smoothness_constraints:
-                        difference_order: 0
-                        lagrange_multiplier: 0.0
+                        difference_order: 3
+                        lagrange_multiplier: 1.0e-3
                 multi_pixel:
                    smoothness_constraints:
                        derivative_order_of_X_variability:    1
@@ -151,7 +151,7 @@ retrieval:
                 single_pixel:
                     smoothness_constraints:
                         difference_order: 1
-                        lagrange_multiplier: 1.0e+1
+                        lagrange_multiplier: 1.0e-1
                 multi_pixel:
                    smoothness_constraints:
                        derivative_order_of_X_variability:    1
