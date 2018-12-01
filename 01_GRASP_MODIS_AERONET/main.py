@@ -29,8 +29,9 @@ siteID = [210, 9, 106, 919, 58, 97, 1185, 278, 243] # can be int or list (not nu
 saveNPZ = False
 
 savePath = pathPath = os.path.join(basePath, 'Working/MODAERO_retrievalPickles/MODAERO_GRASPref_updatedYAMLX.pkl')
-dirPath = pathPath = os.path.join(basePath, 'Remote_Sensing_Projects/GRASP_MODIS/ocean/MOD*.out')
-npzPath = pathPath = os.path.join(basePath, 'Remote_Sensing_Projects/GRASP_MODIS/Ocean_MOD04_L2_C61.out.npz')
+dirPath = pathPath = os.path.join(basePath, 'Remote_Sensing_Projects/GRASP_MODIS/oceanV2/MOD*.out')
+npzPath = pathPath = os.path.join(basePath, 'Remote_Sensing_Projects/GRASP_MODIS/Ocean_MOD04_L2_C61_V2.out.npz')
+#npzPath = pathPath = os.path.join(basePath, 'test.out.npz')
 pathYAML = pathPath = os.path.join(basePath, 'Remote_Sensing_Analysis/GRASP_PythonUtils/settings_modis_2lgnrm_optimalNauru.yml')
 dirGRASP = os.path.dirname(pathYAML)
 
@@ -42,10 +43,10 @@ DB = modaeroDB(npzPath)
 
 if DB.aod.shape[0]==0:
     DB.readDIR(dirPath)
+    DB.sortData()
     if saveNPZ:
         DB.saveData(npzPath)
 
-DB.sorted = False # we shoud be able to remove once the NPZ file is rebuilt
 DB.groupData(siteID)
 
 grspObjs = DB.graspPackData(pathYAML, orbHght, dirGRASP)

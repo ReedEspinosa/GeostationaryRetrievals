@@ -18,6 +18,8 @@ class modaeroDB(object):
     MOD_LOC_IND = np.r_[0:2, 50:52] # year, day, LAT, LON, DATENUM* (*added after calling sortData())
     AERO_LOC_IND = np.r_[46:50] # SITE_ID, ELEV, LAT, LON
     GEOM_IND = np.r_[52:57] # SOL_ZEN, SOL_AZM, SEN_ZEN, SEN_ASM, SCAT_ANG
+    META_IND = np.r_[142:144] # GLINT_ANG, WIND_SPEED
+    MOD_AOD_IND = np.r_[71:78] # DT retrieved AOD "Average", wavelengths 1st seven values of MOD_LAMDA
     hashObj = hashlib.sha1(MOD_LAMDA.tostring()+RFLCT_IND.tostring()+AERO_LAMDA.tostring()
         +AOD_IND.tostring()+MOD_LOC_IND.tostring()+AERO_LOC_IND.tostring()+GEOM_IND.tostring())
     SET_HASH = np.frombuffer(hashObj.digest(), dtype='uint32')[0] # we convert the first 32 bits to unsigned int
@@ -31,6 +33,8 @@ class modaeroDB(object):
             self.mod_loc = np.array([]).reshape(0,self.MOD_LOC_IND.shape[0])
             self.aero_loc = np.array([]).reshape(0,self.AERO_LOC_IND.shape[0])
             self.geom = np.array([]).reshape(0,self.GEOM_IND.shape[0])
+            self.metaData = np.array([]).reshape(0,self.META_IND.shape[0])
+            self.modDT_aod = np.array([]).reshape(0,self.MOD_AOD_IND.shape[0])
             self.sorted = False    
         self.siteSegment = [] # grouped data is after saving stage
         
@@ -46,6 +50,8 @@ class modaeroDB(object):
         self.mod_loc = np.block([[self.mod_loc], [fileData[:, self.MOD_LOC_IND]]])
         self.aero_loc = np.block([[self.aero_loc], [fileData[:, self.AERO_LOC_IND]]])
         self.geom = np.block([[self.geom], [fileData[:, self.GEOM_IND]]])
+        self.metaData = np.block([[self.metaData], [fileData[:, self.META_IND]]])
+        self.modDT_aod = np.block([[self.modDT_aod], [fileData[:, self.MOD_AOD_IND]]])
         self.sorted = False     
 
     def readDIR(self, dirPath):
@@ -64,6 +70,8 @@ class modaeroDB(object):
         self.mod_loc = np.block([[self.mod_loc[srtInd,:], datenums[srtInd,None]]])
         self.aero_loc = self.aero_loc[srtInd,:]
         self.geom = self.geom[srtInd,:]
+        self.metaData = self.metaData[srtInd,:]
+        self.modDT_aod = self.modDT_aod[srtInd,:]    
         self.sorted = True
     
     def groupData(self, siteIDFrc=False):
@@ -86,7 +94,8 @@ class modaeroDB(object):
                 warnings.warn('At least two AERONET site LAT/LON/ELEV were not the same within a single segment!')
             self.siteSegment.append(aeroSite(AEROloc, self.MOD_LAMDA, self.AERO_LAMDA)) # Only one site per segment
             for i in nowInd:
-                self.siteSegment[-1].addMeas(self.rflct[i,:], self.aod[i,:], self.mod_loc[i,:], self.geom[i,:])
+                self.siteSegment[-1].addMeas(self.rflct[i,:], self.aod[i,:], self.mod_loc[i,:],
+                                             self.geom[i,:], self.modDT_aod[i,:], self.metaData[i,:])
                 numDays = len(np.unique(np.atleast_2d(self.siteSegment[-1].mod_loc)[:,4]))
                 if (numDays == self.GRP_DAY_LMT) and (datenumSep[i] != 0) and (i != nowInd[-1]):
                     self.siteSegment.append(aeroSite(AEROloc, self.MOD_LAMDA, self.AERO_LAMDA)) # This segment is full, start a new one
@@ -94,14 +103,16 @@ class modaeroDB(object):
         [seg.condenceAOD() for seg in self.siteSegment] # Remove unused AOD wavelengths
         return self.siteSegment
                              
-    def graspPackData(self, pathYAML, orbHghtKM=713, dirGRASP=False): # THIS WILL CHANGE FOR ix>1, land and AERONET included
+    def graspPackData(self, pathYAML, orbHghtKM=713, dirGRASP=False): # HINT: THIS WILL CHANGE FOR ix>1, land and AERONET included
         msTyp = [41]; # normalized radiances
         lndPrct = 0; # b/c ocean only for now
         graspObjs = []
         lambdaUsed = slice(0,7) # only use first 7 lambda for now
         for seg in self.siteSegment:
             gObj = graspRun(pathYAML, orbHghtKM, dirGRASP)
-            gObj.aodAERO = np.array([]).reshape(0, seg.AERO_LAMDA.shape[0]) # custom variable to save AOD
+            gObj.aodAERO = np.array([]).reshape(0, seg.AERO_LAMDA.shape[0]) # custom variable to save AERONET AOD
+            gObj.aodDT = np.array([]).reshape(0, self.modDT_aod.shape[1]) # custom variable to save Modis DT AOD
+            gObj.metaData = np.array([]).reshape(0, self.metaData.shape[1]) # custom variable to save glint angle & windspeed
             unqDTs = np.unique(seg.mod_loc[:,-1])
 #            unqDTs = np.unique(seg.mod_loc[:,-1])[0:3] # hack to make run faster
             for unqDT in unqDTs:
@@ -112,15 +123,19 @@ class modaeroDB(object):
                 thtv = [np.mean(seg.geom[nowInd, 2])]
                 phi = [np.mean(seg.geom[nowInd, 1] - seg.geom[nowInd, 3])]
                 gObj.aodAERO = np.vstack([gObj.aodAERO, seg.aod[nowInd[0],:]])
-                for i,wl in enumerate(seg.MOD_LAMDA[lambdaUsed]):
-                     msrmnts = [min(np.mean(seg.rflct[nowInd,i])*mu, 0.000001)] # MODIS R=L/FO*pi/mu0; GRASP R=L/FO*pi w/ R>1e-6
+                gObj.aodDT = np.vstack([gObj.aodDT, np.mean(seg.modDT_aod[nowInd,:], axis=0)])
+                gObj.metaData = np.vstack([gObj.metaData, np.mean(seg.metaData[nowInd,:], axis=0)])
+                for i,wl in enumerate(seg.MOD_LAMDA[lambdaUsed]): # HINT: THIS IS WERE TO ADD AOD AS RETRIEVAL INPUT
+                     msrmnts = [max(np.mean(seg.rflct[nowInd,i])*mu, 0.00001)] # MODIS R=L/FO*pi/mu0; GRASP R=L/FO*pi w/ R>1e-6
                      nowPix.addMeas(wl, msTyp, 1, sza, thtv, phi, msrmnts)
                 gObj.addPix(nowPix)
             graspObjs.append(gObj)
         return graspObjs
             
-    def saveData(self, filePath):
-        np.savez_compressed(filePath, rflct=self.rflct, aod=self.aod, mod_loc=self.mod_loc, aero_loc=self.aero_loc, geom=self.geom, set_hash=self.SET_HASH)        
+    def saveData(self, filePath): # only saves data after readDir and sortData, grouped data is not inlcuded
+        np.savez_compressed(filePath, rflct=self.rflct, aod=self.aod, mod_loc=self.mod_loc,
+                            aero_loc=self.aero_loc, geom=self.geom, set_hash=self.SET_HASH,
+                            sort=self.sorted, modDT_aod=self.modDT_aod, metaData=self.metaData)        
         
     def loadData(self, filePath):
         if not os.path.isfile(filePath):
@@ -135,36 +150,35 @@ class modaeroDB(object):
         self.mod_loc = loaded['mod_loc']
         self.aero_loc = loaded['aero_loc']
         self.geom = loaded['geom']
-        del(loaded)
+        self.sorted = loaded['sort']
+        self.modDT_aod = loaded['modDT_aod']
+        self.metaData = loaded['metaData']
         return True
         
-        
+    
 class aeroSite(object):
     def __init__(self, location, MOD_LAMDA, AERO_LAMDA):
         self.aero_loc = location
         self.MOD_LAMDA = MOD_LAMDA
         self.AERO_LAMDA = AERO_LAMDA
         self.rflct = np.array([]).reshape(0,MOD_LAMDA.shape[0])
-        self.aod = np.array([]).reshape(0,AERO_LAMDA.shape[0])        
-        self.mod_loc = np.array([])
+        self.aod = np.array([]).reshape(0,AERO_LAMDA.shape[0])
+        self.mod_loc = np.array([]) # we don't know Ncol for the rest
         self.geom = np.array([])
+        self.metaData = np.array([])
+        self.modDT_aod = np.array([])        
         self.Nmeas = 0;
                
-    def addMeas(self, rflct, aod, mod_loc, geom):
+    def addMeas(self, rflct, aod, mod_loc, geom, modDT_aod=False, metaData=False):
         self.rflct = np.vstack([self.rflct, rflct])
         self.aod = np.vstack([self.aod, aod])
         self.mod_loc = np.vstack([self.mod_loc, mod_loc]) if self.mod_loc.size else mod_loc
         self.geom = np.vstack([self.geom, geom]) if self.geom.size else geom
+        self.metaData = np.vstack([self.metaData, metaData]) if self.metaData.size else metaData
+        self.modDT_aod = np.vstack([self.modDT_aod, modDT_aod]) if self.modDT_aod.size else modDT_aod
         self.Nmeas += 1
               
-    def absorbSite(self, site2absorb):
-        self.rflct = np.vstack([self.rflct, site2absorb.rflct])
-        self.aod = np.vstack([self.aod, site2absorb.aod])
-        self.mod_loc = np.vstack([self.mod_loc, site2absorb.mod_loc])
-        self.geom = np.vstack([self.geom, site2absorb.geom])
-        self.Nmeas = self.Nmeas + site2absorb.Nmeas
-              
-    def condenceAOD(self):
+    def condenceAOD(self): # HINT: we may want to "condence" AERONET AOD to MODIS wavelengths here
         emptyInd = np.isnan(self.aod).all(0)
         if np.sum(~emptyInd) < 5:
             warnings.warn('Less than 5 valid wavelengths found at AERONET site %d' % self.aero_loc[0])        
