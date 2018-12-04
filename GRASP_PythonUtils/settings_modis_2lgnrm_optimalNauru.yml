@@ -1,6 +1,5 @@
 # Settings for MODIS retrieval, adapted from POLDER example
 # Authors: Pavel Litvinov, Xin Huang, Anton Lopatin, Reed Espinosa
-# date of last modification: 2018-09-21 (Reed Espinosa)
 
 input:
     driver: sdata
@@ -34,7 +33,7 @@ retrieval:
         inversion_regime: multi_pixel   
 
     noises:
-        noise[1]:
+        noise[1]: # very low weight to 0.470um data
             standard_deviation_synthetic: 0.0
             error_type:   relative
             standard_deviation:  0.5
@@ -116,9 +115,9 @@ retrieval:
             retrieved: true
             mode[1]: 
                 initial_guess: 
-                    value:                        [0.14,    0.5]
-                    min:                           [0.12,    0.4]
-                    max:                          [0.16,   0.6]
+                    value:                        [0.14,      0.51]
+                    min:                           [0.125,    0.39]
+                    max:                          [0.163,   0.56]
                     index_of_wavelength_involved: [0,     0]
                 single_pixel:
                     a_priori_estimates:
@@ -137,8 +136,8 @@ retrieval:
             mode[2]: 
                 initial_guess: 
                     value:                        [1.77, 0.6]
-                    min:                          [0.5,  0.4]
-                    max:                          [3,    0.8]
+                    min:                          [0.35,  0.4]
+                    max:                          [2.7,    0.77]
                     index_of_wavelength_involved: [0,     0]
                 single_pixel:
                     a_priori_estimates:
@@ -223,8 +222,8 @@ retrieval:
             mode[2]:
                 initial_guess:                                        #1         #2        #3        #4        #5        #6       #7
                     value:                                               [1.40,     1.40,    1.40,   1.40,   1.40,     1.40,   1.40    ]
-                    min:                                                  [1.35,     1.35,    1.35,   1.35,   1.35,     1.35,   1.35    ]
-                    max:                                                 [1.42,     1.42,    1.42,   1.42,   1.42,     1.42,   1.42    ]
+                    min:                                                  [1.33,     1.33,    1.33,   1.33,   1.33,     1.33,   1.33    ]
+                    max:                                                 [1.43,     1.45,    1.47,   1.49,   1.49,     1.49,   1.49    ]
                     index_of_wavelength_involved:   [1,          2,         3,         4,         5,         6,        7  ] 
                 single_pixel:
                     smoothness_constraints:
@@ -284,9 +283,9 @@ retrieval:
             retrieved: true
             mode[1]:    
                 initial_guess:                       #1      #2      #3      #4      #5      #6      #7       
-                    value:                          [0.015,   0.01,   0.0065,   0.0035, 0.003,  0.0025,  0.002  ]
-                    min:                            [0.0001, 0.0001, 0.0001, 0.0001, 0.00001, 0.00001, 0.00001 ]
-                    max:                            [0.065,   0.05,   0.05,   0.05,   0.05,   0.05,   0.05   ]
+                    value:                          [0.02,    0.013,   0.0065,   0.0035, 0.003,  0.0025,  0.002  ]
+                    min:                            [0.003,   0.001,   0.0001, 0.0001, 0.00001, 0.00001, 0.00001 ]
+                    max:                            [0.045,   0.035,   0.025,   0.015,   0.01,   0.01,   0.01   ]
                     index_of_wavelength_involved:   [1,      2,      3,      4,      5,      6,      7      ]
                 single_pixel:
                     a_priori_estimates:
