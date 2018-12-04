@@ -9,6 +9,7 @@ import hashlib
 from math import ceil
 sys.path.append(os.path.join("..", "GRASP_PythonUtils"))
 from runGRASP import graspRun, pixel
+from miscFunctions import angstrmIntrp
 
 class modaeroDB(object):
     MOD_LAMDA = np.array([0.469, 0.555, 0.645, 0.8585, 1.24, 1.64, 2.13, 0.412, 0.443, 0.745])
@@ -103,10 +104,10 @@ class modaeroDB(object):
         [seg.condenceAOD() for seg in self.siteSegment] # Remove unused AOD wavelengths
         return self.siteSegment
                              
-    def graspPackData(self, pathYAML, orbHghtKM=713, dirGRASP=False): # HINT: THIS WILL CHANGE FOR ix>1, land and AERONET included
-        msTyp = [41]; # normalized radiances
-        lndPrct = 0; # b/c ocean only for now
+    def graspPackData(self, pathYAML, incldAERO=False, orbHghtKM=713, dirGRASP=False): # HINT: THIS WILL CHANGE FOR ix>1, land and AERONET included
+        lndPrct = 0 # b/c ocean only for now
         graspObjs = []
+        measLwrBnd = 0.00001 # minimum allowed value for radiance and AOD
         lambdaUsed = slice(0,7) # only use first 7 lambda for now
         for seg in self.siteSegment:
             gObj = graspRun(pathYAML, orbHghtKM, dirGRASP)
@@ -114,28 +115,37 @@ class modaeroDB(object):
             gObj.aodDT = np.array([]).reshape(0, self.modDT_aod.shape[1]) # custom variable to save Modis DT AOD
             gObj.metaData = np.array([]).reshape(0, self.metaData.shape[1]) # custom variable to save glint angle & windspeed
             unqDTs = np.unique(seg.mod_loc[:,-1])
-#            unqDTs = np.unique(seg.mod_loc[:,-1])[0:3] # hack to make run faster
+#            unqDTs = np.unique(seg.mod_loc[:,-1])[0:3] # HACK to make run faster
             for unqDT in unqDTs:
                 nowInd = np.nonzero(seg.mod_loc[:,-1] == unqDT)[0]
                 nowPix = pixel(unqDT, 1, 1, seg.aero_loc[3], seg.aero_loc[2], seg.aero_loc[1], lndPrct)
-                sza = np.mean(seg.geom[nowInd, 0])
-                mu = np.cos(sza*np.pi/180)
-                thtv = [np.mean(seg.geom[nowInd, 2])]
-                phi = [np.mean(seg.geom[nowInd, 1] - seg.geom[nowInd, 3])]
                 gObj.aodAERO = np.vstack([gObj.aodAERO, seg.aod[nowInd[0],:]])
                 gObj.aodDT = np.vstack([gObj.aodDT, np.mean(seg.modDT_aod[nowInd,:], axis=0)])
                 gObj.metaData = np.vstack([gObj.metaData, np.mean(seg.metaData[nowInd,:], axis=0)])
-                for i,wl in enumerate(seg.MOD_LAMDA[lambdaUsed]): # HINT: THIS IS WERE TO ADD AOD AS RETRIEVAL INPUT
-                     msrmnts = [max(np.mean(seg.rflct[nowInd,i])*mu, 0.00001)] # MODIS R=L/FO*pi/mu0; GRASP R=L/FO*pi w/ R>1e-6
-                     nowPix.addMeas(wl, msTyp, 1, sza, thtv, phi, msrmnts)
+                for i,wl in enumerate(seg.MOD_LAMDA[lambdaUsed]): # HINT: THIS IS WERE TO ADD AOD AS RETRIEVAL INPUT\
+                    AEROaod = angstrmIntrp(seg.AERO_LAMDA, seg.aod[nowInd[0],:], wl) if incldAERO else np.nan
+                    msTyp = np.r_[41] if np.isnan(AEROaod) else np.r_[41, 12] # normalized radiances, AOD
+                    nip = msTyp.shape[0]  
+                    sza = np.mean(seg.geom[nowInd, 0])
+                    mu = np.cos(sza*np.pi/180) # [0] needed b/c sza might have dummyAng at end
+                    dummyAng = [] if np.isnan(AEROaod) else 0
+                    thtv = np.r_[np.mean(seg.geom[nowInd, 2]), dummyAng]
+                    phi = np.r_[np.mean(seg.geom[nowInd, 1] - seg.geom[nowInd, 3]), dummyAng]
+                    radiance = max(np.mean(seg.rflct[nowInd,i])*mu, measLwrBnd) # MODIS R=L/FO*pi/mu0; GRASP R=L/FO*pi w/ R>1e-6                      
+                    AEROaod =  [] if np.isnan(AEROaod) else max(AEROaod, measLwrBnd)
+                    nowPix.addMeas(wl, msTyp, np.repeat(1, nip), sza, thtv, phi, np.r_[radiance, AEROaod])
                 gObj.addPix(nowPix)
             graspObjs.append(gObj)
         return graspObjs
             
     def saveData(self, filePath): # only saves data after readDir and sortData, grouped data is not inlcuded
+        if not os.path.isdir(os.path.dirname(filePath)):
+            warnings.warn('The directory containing the NPZ file path specified does not exist!')
+            return False
         np.savez_compressed(filePath, rflct=self.rflct, aod=self.aod, mod_loc=self.mod_loc,
                             aero_loc=self.aero_loc, geom=self.geom, set_hash=self.SET_HASH,
-                            sort=self.sorted, modDT_aod=self.modDT_aod, metaData=self.metaData)        
+                            sort=self.sorted, modDT_aod=self.modDT_aod, metaData=self.metaData)
+        return True
         
     def loadData(self, filePath):
         if not os.path.isfile(filePath):

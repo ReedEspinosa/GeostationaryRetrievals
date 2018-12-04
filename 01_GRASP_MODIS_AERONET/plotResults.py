@@ -10,19 +10,27 @@ sys.path.append(os.path.join("..", "GRASP_PythonUtils"))
 from miscFunctions import angstrmIntrp, angstrm
 from scipy.stats import gaussian_kde
 
-dillFN = '/Users/wrespino/Synced/Working/MODAERO_retrievalPickles/MODAERO_GRASPref_updatedYAMLX.pkl'
+#dillFN = '/Users/wrespino/Synced/Working/MODAERO_retrievalPickles/MODAERO_GRASPref_updatedYAMLX.pkl'
+dillFN = '/Users/wrespino/Synced/Working/MODAERO_retrievalPickles/MODAERO_GRASP_AERONETincld_surfLoose.pkl'
+#dillFN = '/Users/wrespino/Synced/Working/MODAERO_retrievalPickles/MODAERO_GRASP_MODISonly.pkl'
+#dillFN = '/Users/wrespino/Synced/Working/MODAERO_retrievalPickles/MODAERO_GRASP_MODISonly_Aqua.pkl'
+#dillFN = '/Users/wrespino/Synced/Working/MODAERO_retrievalPickles/MODAERO_GRASP_MODISonly_singlePix.pkl'
+#dillFN = '/Users/wrespino/Synced/Working/MODAERO_retrievalPickles/MODAERO_GRASP_MODISonly_noAeroTimeSmooth.pkl'
 
+ttlTxt = 'MODIS AQUA' 
 
 maxAOD = 2
 
 siteID_plot = False # False for all sites (doesn't apply to AOD)
 ttleNm = ''
-lmbdInd = 1 # [0.469, 0.555, 0.645, 0.8585, 1.24, 1.64, 2.13]
+lmbdInd = 0 # [0.469, 0.555, 0.645, 0.8585, 1.24, 1.64, 2.13]
 #biasCrct = [1.85, 1.32, 1, 0.62]
 biasCrct = [1, 1, 1, 1]
-AODonly = False
+plotDT = False # AE IS ALWAYS GRASP (despite label)
+AODonly = True
 difVSclrPlot = False;
 logLogAOD = True # plot AOD on log-log plot
+plotMode = 1
 
 dill.load_session(dillFN)
 radii = rslts[0][0]['r'][0] # assume the same radii are used in every retrieval; analysis:ignore (it was loaded)
@@ -49,8 +57,8 @@ for rsltRun in rslts: # analysis:ignore (it was loaded)
     for rslt in rsltRun:
         aodGRASP = np.append(aodGRASP, rslt['aod'][lmbdInd])
         aeGRASP = np.append(aeGRASP, angstrm(wvlngth[[1,3]], rslt['aod'][[1,3]]))
-        rriGRASP = np.append(rriGRASP, rslt['n'][1,lmbdInd]) # BUG: these two are only fine mode values
-        iriGRASP = np.append(iriGRASP, rslt['k'][1,lmbdInd]) #      fix needed here and in reading of GRASP output
+        rriGRASP = np.append(rriGRASP, rslt['n'][plotMode,lmbdInd]) # BUG: these two are only fine mode values
+        iriGRASP = np.append(iriGRASP, rslt['k'][plotMode,lmbdInd]) #      fix needed here and in reading of GRASP output
         sphGRASP = np.vstack([sphGRASP, rslt['sph']])
         dVdlnr = np.vstack([dVdlnr, rslt['vol']@rslt['dVdlnr']]) # scale to um^3/um^2 & sum multiple modes
         volFMF = np.append(volFMF, rslt['vol'][0]/(np.sum(rslt['vol']))) # technically this is "first mode fraction"
@@ -68,6 +76,8 @@ lmbdStr = ' (%4.2f μm)' % lmbdVal
 # AERONET AODs
 aodAERO = np.array([])
 aeAERO = np.array([])
+aodDT = np.array([])
+windNCEP = np.array([])
 siteID = np.array([])
 for seg in DB.siteSegment: # analysis:ignore (it was loaded)
     unqDTs = np.unique(seg.mod_loc[:,-1])
@@ -83,15 +93,24 @@ for seg in DB.siteSegment: # analysis:ignore (it was loaded)
         aeInd = [grnInd, nirInd]
         aeAERO = np.append(aeAERO, angstrm(seg.AERO_LAMDA[aeInd], seg.aod[nowInd,aeInd]))
         siteID = np.append(siteID, seg.aero_loc[0])
+        windNCEP = np.append(windNCEP, seg.metaData[nowInd,1])
+        aodDT = np.append(aodDT, seg.modDT_aod[nowInd, lmbdInd])
 assert (aodAERO.shape[0] == aodGRASP.shape[0]), 'rslts and DB.siteSegment contained a different number of pixels!'
+aodDT[aodDT<0.00001] = 0.00001
 
 # compare with AERONET
 aodAERO = np.array(aodAERO)
-aodGRASP = np.array(aodGRASP)
-aodGRASPcln = aodGRASP[~np.isnan(aodAERO)]/biasCrct[lmbdInd]
+if plotDT:
+    aodGRASP = np.array(aodDT)
+    rtrvlStr = 'Dark Target'
+else:
+    aodGRASP = np.array(aodGRASP)
+    rtrvlStr = 'GRASP'
+aodRtrvdCln = aodGRASP[~np.isnan(aodAERO)]/biasCrct[lmbdInd]
+#aodRtrvdCln[aodRtrvdCln < 0.009] = 0.009 # HACK
 aeNotNan = ~np.isnan(aeAERO)
-aeGRASPcln = aeGRASP[aeNotNan]
-aeGRASPcln = aeGRASPcln[aodAERO[aeNotNan]>0.1]
+aeRtrvdCln = aeGRASP[aeNotNan]
+aeRtrvdCln = aeRtrvdCln[aodAERO[aeNotNan]>0.05]
 
 # THESE ALL COLOR THE POINTS BY SOME AUX VARIABLE, TO COLOR BY DENSITY SEE BELOW
 #clrVar = wndSpd[~np.isnan(aodAERO)] # WIND SPEED
@@ -106,56 +125,84 @@ aeGRASPcln = aeGRASPcln[aodAERO[aeNotNan]>0.1]
 #clrVar[clrVar > np.percentile(clrVar,98)] = np.percentile(clrVar,98)
 
 aeAERO = aeAERO[aeNotNan]
-aeAERO = aeAERO[aodAERO[aeNotNan]>0.1]
+aeAERO = aeAERO[aodAERO[aeNotNan]>0.05]
+windNCEPcln = windNCEP[~np.isnan(aodAERO)]
+wndSpdcln = wndSpd[~np.isnan(aodAERO)]
 aodAERO = aodAERO[~np.isnan(aodAERO)]
 
 #COLOR BY DENSITY
-xy = np.log(np.vstack([aodAERO,aodGRASPcln])) if logLogAOD else np.vstack([aodAERO,aodGRASPcln])
+xy = np.log(np.vstack([aodAERO,aodRtrvdCln])) if logLogAOD else np.vstack([aodAERO,aodRtrvdCln])
 clrVar = gaussian_kde(xy)(xy)
 
-line = plt.figure()
-ax = plt.scatter(aodAERO, aodGRASPcln, c=clrVar, marker='.')
+#line = plt.figure()
+ax = plt.scatter(aodAERO, aodRtrvdCln, c=clrVar, marker='.')
 pax = plt.plot(np.r_[0, maxAOD], np.r_[0, maxAOD], 'k')
 plt.xlabel("AOD AERONET" + lmbdStr)
-plt.ylabel("AOD MODIS/GRASP" + lmbdStr)
+plt.ylabel("AOD " + rtrvlStr + " " + lmbdStr)
 plt.xlim([0.01, maxAOD])
 plt.ylim([0.01, maxAOD])
-Rcoef = np.corrcoef(aodAERO, aodGRASPcln)[0,1]
-RMSE = np.sqrt(np.mean((aodAERO - aodGRASPcln)**2))
-textstr = 'N=%d\nR=%.3f\nRMS=%.3f\n'%(len(aodAERO), Rcoef, RMSE)
+Rcoef = np.corrcoef(aodAERO, aodRtrvdCln)[0,1]
+RMSE = np.sqrt(np.mean((aodAERO - aodRtrvdCln)**2))
+#fTau = np.mean(aodRtrvdCln/aodAERO)
+#fTau = 2*np.mean((aodRtrvdCln-aodAERO)/(aodRtrvdCln+aodAERO))
+#textstr = 'N=%d\nR=%.3f\nRMS=%.3f\nbias=%.3f%%\n'%(len(aodAERO), Rcoef, RMSE, 100*fTau)
+fTau = np.mean((aodRtrvdCln-aodAERO))
+textstr = 'N=%d\nR=%.3f\nRMS=%.3f\nbias=%.3f\n'%(len(aodAERO), Rcoef, RMSE, fTau)
 if logLogAOD:
     plt.text(0.2*maxAOD, 0.015, textstr, fontsize=12)
     plt.yscale('log')
     plt.xscale('log')
 else:
     plt.text(0.7*maxAOD, 0.03, textstr, fontsize=12)
-plt.title('All Sites')
+plt.title(ttlTxt)
 
 if difVSclrPlot:
     line = plt.figure()
-    ax = plt.scatter(aodGRASPcln/aodAERO, clrVar, marker='.')
+    ax = plt.scatter(aodRtrvdCln/aodAERO, clrVar, marker='.')
     plt.xlabel("AOD: MODIS/GRASP - AERONET" + lmbdStr)
     plt.ylabel("Color Parameter")
     plt.xlim([0.3, 3])
     plt.title('All Sites')
 
+
+if AODonly: sys.exit()
+
 # AE Plots
-xy = np.vstack([aeAERO,aeGRASPcln])
+xy = np.vstack([aeAERO,aeRtrvdCln])
 clrVar = gaussian_kde(xy)(xy)
 
 line = plt.figure()
-ax = plt.scatter(aeAERO, aeGRASPcln, c=clrVar, marker='.')
+ax = plt.scatter(aeAERO, aeRtrvdCln, c=clrVar, marker='.')
 pax = plt.plot(np.r_[0, 3], np.r_[0, 3], 'k')
 plt.xlabel("AE AERONET")
-plt.ylabel("AE MODIS/GRASP")
+plt.ylabel("AE " + rtrvlStr + " " + lmbdStr)
 plt.xlim([-0.35, 2.8])
 plt.ylim([-0.35, 2.8])
-Rcoef = np.corrcoef(aeAERO, aeGRASPcln)[0,1]
-RMSE = np.sqrt(np.mean((aeAERO - aeGRASPcln)**2))
-textstr = 'N=%d\nR=%.3f\nRMS=%.3f\n'%(len(aeAERO), Rcoef, RMSE)
+Rcoef = np.corrcoef(aeAERO, aeRtrvdCln)[0,1]
+RMSE = np.sqrt(np.mean((aeAERO - aeRtrvdCln)**2))
+#fTau = np.mean(aeRtrvdCln/aeAERO)
+fTau = 2*np.mean((aeRtrvdCln-aeAERO)/(aeRtrvdCln+aeAERO))
+textstr = 'N=%d\nR=%.3f\nRMS=%.3f\nbiasτ=%.3f%%\n'%(len(aodAERO), Rcoef, RMSE, 100*fTau)
 plt.text(2, 0, textstr, fontsize=12)
 
-if AODonly: sys.exit()
+plt.figure()
+y = 2*(aodRtrvdCln-aodAERO)/(aodRtrvdCln+aodAERO)
+x = 2*(windNCEPcln-wndSpdcln)/(windNCEPcln+wndSpdcln)
+xy = np.vstack([x,y])
+#xy = np.vstack([windNCEP,wndSpd])
+clrVar = gaussian_kde(xy)(xy)
+#ax = plt.scatter(windNCEP, wndSpd, c=clrVar, marker='.')
+#plt.xlabel('NCEP')
+#plt.ylabel('GRASP')
+#plt.title('Wind Speed (m/s)')
+ax = plt.scatter(x, y, c=clrVar, marker='.')
+plt.ylim([-2,2])
+plt.xlim([-2,2])
+plt.xlabel('2(vGRASP-vNCEP)/(vGRASP+vNCEP)')
+plt.ylabel('2(τGRASP-τAERONET)/(τGRASP+τAERONET)')
+plt.title('Wind Speed vs AOD Biases ' + lmbdStr)
+
+
 # plot PSD
 N = len(dVdlnr)
 if siteID_plot:
@@ -189,15 +236,15 @@ ax[1].hist(iriGRASP[lowSphInd], 60)
 
 # plot rv PDF
 fig, ax = plt.subplots(nrows=1, ncols=3, figsize=(10, 5))
-ax[0].hist(rv[pltInd,1], 30)
+ax[0].hist(rv[pltInd,plotMode], 30)
 ax[0].set_xlabel("rv")
 ax[0].set_ylabel("Frequency (a.u.)")
-ax[0].hist(rv[lowSphInd,1], 30)
+ax[0].hist(rv[lowSphInd,plotMode], 30)
 # plot sigma PDF
-ax[1].hist(sigma[pltInd,1], 60)
+ax[1].hist(sigma[pltInd,plotMode], 60)
 ax[1].set_title(ttleNm)
 ax[1].set_xlabel("σ")
-ax[1].hist(sigma[lowSphInd,1], 60)
+ax[1].hist(sigma[lowSphInd,plotMode], 60)
 # plot SPH PDF
 ax[2].hist(sphGRASP[pltInd,1], 30) # ONLY COARSE MODE
 ax[2].set_xlabel("Spherical Fraction")

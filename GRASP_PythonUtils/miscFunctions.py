@@ -6,7 +6,9 @@ import numpy as np
 def angstrmIntrp(lmbdIn, tau, lmbdTrgt):
     tau = tau[lmbdIn.argsort()]
     lmbd = lmbdIn[lmbdIn.argsort()]
-    assert (lmbdTrgt >= lmbd.min() and lmbdTrgt <= lmbd.max()), "This function will not extroplate, lmbdTrgt must fall between two values."
+#    assert (lmbdTrgt >= lmbd.min() and lmbdTrgt <= lmbd.max()), "This function will not extroplate, lmbdTrgt must fall between two values."
+    if lmbdTrgt < lmbd.min() or lmbdTrgt > lmbd.max():
+        return np.nan
     if lmbdTrgt==lmbd[0]:
         return tau[0]
     if lmbdTrgt==lmbd[-1]:
