@@ -10,10 +10,10 @@ sys.path.append(os.path.join("..", "GRASP_PythonUtils"))
 from miscFunctions import angstrmIntrp, angstrm
 from scipy.stats import gaussian_kde
 
-#dillFN = '/Users/wrespino/Synced/Working/MODAERO_retrievalPickles/MODAERO_GRASPref_updatedYAMLX.pkl'
-dillFN = '/Users/wrespino/Synced/Working/MODAERO_retrievalPickles/MODAERO_GRASP_AERONETincld_surfLoose.pkl'
+#dillFN = '/Users/wrespino/Synced/Working/MODAERO_retrievalPickles/MODAERO_GRASP_MODISonly_Terra.pkl'
+#dillFN = '/Users/wrespino/Synced/Working/MODAERO_retrievalPickles/MODAERO_GRASP_AERONETincld_surfLoose.pkl'
 #dillFN = '/Users/wrespino/Synced/Working/MODAERO_retrievalPickles/MODAERO_GRASP_MODISonly.pkl'
-#dillFN = '/Users/wrespino/Synced/Working/MODAERO_retrievalPickles/MODAERO_GRASP_MODISonly_Aqua.pkl'
+dillFN = '/Users/wrespino/Synced/Working/MODAERO_retrievalPickles/MODAERO_GRASP_MODISonly_Aqua.pkl'
 #dillFN = '/Users/wrespino/Synced/Working/MODAERO_retrievalPickles/MODAERO_GRASP_MODISonly_singlePix.pkl'
 #dillFN = '/Users/wrespino/Synced/Working/MODAERO_retrievalPickles/MODAERO_GRASP_MODISonly_noAeroTimeSmooth.pkl'
 
@@ -23,13 +23,13 @@ maxAOD = 2
 
 siteID_plot = False # False for all sites (doesn't apply to AOD)
 ttleNm = ''
-lmbdInd = 0 # [0.469, 0.555, 0.645, 0.8585, 1.24, 1.64, 2.13]
+lmbdInd = 2 # [0.469, 0.555, 0.645, 0.8585, 1.24, 1.64, 2.13]
 #biasCrct = [1.85, 1.32, 1, 0.62]
 biasCrct = [1, 1, 1, 1]
 plotDT = False # AE IS ALWAYS GRASP (despite label)
 AODonly = True
 difVSclrPlot = False;
-logLogAOD = True # plot AOD on log-log plot
+logLogAOD = False # plot AOD on log-log plot
 plotMode = 1
 
 dill.load_session(dillFN)
@@ -134,7 +134,7 @@ aodAERO = aodAERO[~np.isnan(aodAERO)]
 xy = np.log(np.vstack([aodAERO,aodRtrvdCln])) if logLogAOD else np.vstack([aodAERO,aodRtrvdCln])
 clrVar = gaussian_kde(xy)(xy)
 
-#line = plt.figure()
+line = plt.figure()
 ax = plt.scatter(aodAERO, aodRtrvdCln, c=clrVar, marker='.')
 pax = plt.plot(np.r_[0, maxAOD], np.r_[0, maxAOD], 'k')
 plt.xlabel("AOD AERONET" + lmbdStr)
@@ -164,6 +164,41 @@ if difVSclrPlot:
     plt.xlim([0.3, 3])
     plt.title('All Sites')
 
+# AOD diff plot
+minBin = 5e-3
+maxBin = 2
+FS=14
+binEdge = np.r_[np.logspace(np.log10(minBin),np.log10(maxBin), 13)];
+binMid = np.exp(np.log(binEdge[1:]*binEdge[:-1])/2)
+aodDif = aodRtrvdCln-aodAERO
+aodRng = np.zeros([binEdge.shape[0]-1,3]) # lower (16%), mean, upper (84%)
+for i in range(binEdge.shape[0]-1):
+    aodDifNow = aodDif[np.logical_and(aodAERO > binEdge[i], aodAERO <= binEdge[i+1])]
+    if aodDifNow.shape[0]==0:
+        aodRng[i,:] = np.nan
+    else:
+        aodRng[i,0] = np.percentile(aodDifNow, 16)
+        aodRng[i,1] = np.mean(aodDifNow)
+        aodRng[i,2] = np.percentile(aodDifNow, 84)
+plt.figure()
+plt.xscale('log')
+plt.plot([1e-5,maxAOD], [0,0], 'k')
+x = np.logspace(-4, 1, 1000)
+y = 0.03+0.1*x
+#y = 0.05+0.15*x
+plt.plot(x, y, '--', color=[0.5,0.5,0.5])
+plt.plot(x, -y, '--', color=[0.5,0.5,0.5])
+errBnds = np.abs(aodRng[:,1].reshape(-1,1)-aodRng[:,[0,2]]).T
+plt.errorbar(binMid, aodRng[:,1], errBnds, ecolor='r', color='r', marker='s', linstyle=None)
+plt.xlim([minBin, maxAOD])
+plt.ylim([-0.55, 0.55])
+plt.xlabel('AERONET AOD' + lmbdStr)
+plt.ylabel('GRASP-AERONET AOD' + lmbdStr)
+inEE = np.sum(np.abs(aodDif) < 0.03+0.1*aodAERO)/aodAERO.shape[0]
+in2EE = np.sum(np.abs(aodDif) < 2*(0.03+0.1*aodAERO))/aodAERO.shape[0]
+plt.text(0.01, -0.3, 'N=%d\nwithin 1xEE: %4.1f%%\nwithin 2xEE: %4.1f%%' % (aodAERO.shape[0],100*inEE,100*in2EE), FontSize=FS)
+plt.text(0.02, 0.06, 'EE=0.03+0.1τ', FontSize=FS)
+
 
 if AODonly: sys.exit()
 
@@ -185,22 +220,29 @@ fTau = 2*np.mean((aeRtrvdCln-aeAERO)/(aeRtrvdCln+aeAERO))
 textstr = 'N=%d\nR=%.3f\nRMS=%.3f\nbiasτ=%.3f%%\n'%(len(aodAERO), Rcoef, RMSE, 100*fTau)
 plt.text(2, 0, textstr, fontsize=12)
 
+# WIND STUFF
 plt.figure()
-y = 2*(aodRtrvdCln-aodAERO)/(aodRtrvdCln+aodAERO)
-x = 2*(windNCEPcln-wndSpdcln)/(windNCEPcln+wndSpdcln)
-xy = np.vstack([x,y])
-#xy = np.vstack([windNCEP,wndSpd])
+#y = 2*(aodRtrvdCln-aodAERO)/(aodRtrvdCln+aodAERO)
+#x = 2*(windNCEPcln-wndSpdcln)/(windNCEPcln+wndSpdcln)
+#xy = np.vstack([x,y])
+xy = np.vstack([windNCEP,wndSpd])
 clrVar = gaussian_kde(xy)(xy)
-#ax = plt.scatter(windNCEP, wndSpd, c=clrVar, marker='.')
-#plt.xlabel('NCEP')
-#plt.ylabel('GRASP')
-#plt.title('Wind Speed (m/s)')
-ax = plt.scatter(x, y, c=clrVar, marker='.')
-plt.ylim([-2,2])
-plt.xlim([-2,2])
-plt.xlabel('2(vGRASP-vNCEP)/(vGRASP+vNCEP)')
-plt.ylabel('2(τGRASP-τAERONET)/(τGRASP+τAERONET)')
-plt.title('Wind Speed vs AOD Biases ' + lmbdStr)
+ax = plt.scatter(windNCEP, wndSpd, c=clrVar, marker='.')
+plt.xlabel('NCEP')
+plt.ylabel('GRASP')
+plt.title('Wind Speed (m/s)')
+#ax = plt.scatter(x, y, c=clrVar, marker='.')
+#plt.ylim([-2,2])
+#plt.xlim([-2,2])
+#plt.xlabel('2(vGRASP-vNCEP)/(vGRASP+vNCEP)')
+#plt.ylabel('2(τGRASP-τAERONET)/(τGRASP+τAERONET)')
+#plt.title('Wind Speed vs AOD Biases ' + lmbdStr)
+#Rcoef = np.corrcoef(xy[0,:], xy[1,:])[0,1]
+#RMSE = np.sqrt(np.mean((xy[0,:] - xy[1,:])**2))
+#bias = np.mean(xy[1,:]-xy[0,:])
+#textstr = 'N=%d\nR=%.3f\nRMS=%.3f\nbiasτ=%.3f%%\n'%(len(aodAERO), Rcoef, RMSE, bias)
+#plt.text(6, 3, textstr, fontsize=12)
+
 
 
 # plot PSD
