@@ -111,17 +111,16 @@ class modaeroDB(object):
         lambdaUsed = slice(0,7) # only use first 7 lambda for now
         for seg in self.siteSegment:
             gObj = graspRun(pathYAML, orbHghtKM, dirGRASP)
-            gObj.aodAERO = np.array([]).reshape(0, seg.AERO_LAMDA.shape[0]) # custom variable to save AERONET AOD
-            gObj.aodDT = np.array([]).reshape(0, self.modDT_aod.shape[1]) # custom variable to save Modis DT AOD
-            gObj.metaData = np.array([]).reshape(0, self.metaData.shape[1]) # custom variable to save glint angle & windspeed
+            gObj.AUX_dict = []
             unqDTs = np.unique(seg.mod_loc[:,-1])
 #            unqDTs = np.unique(seg.mod_loc[:,-1])[0:3] # HACK to make run faster
             for unqDT in unqDTs:
                 nowInd = np.nonzero(seg.mod_loc[:,-1] == unqDT)[0]
                 nowPix = pixel(unqDT, 1, 1, seg.aero_loc[3], seg.aero_loc[2], seg.aero_loc[1], lndPrct)
-                gObj.aodAERO = np.vstack([gObj.aodAERO, seg.aod[nowInd[0],:]])
-                gObj.aodDT = np.vstack([gObj.aodDT, np.mean(seg.modDT_aod[nowInd,:], axis=0)])
-                gObj.metaData = np.vstack([gObj.metaData, np.mean(seg.metaData[nowInd,:], axis=0)])
+                aodAERO = seg.aod[nowInd[0],:]
+                aodDT = np.mean(seg.modDT_aod[nowInd,:], axis=0)
+                metaData = np.mean(seg.metaData[nowInd,:], axis=0)
+                gObj.AUX_dict.append({'aodAERO':aodAERO, 'aodDT':aodDT, 'metaData':metaData})
                 for i,wl in enumerate(seg.MOD_LAMDA[lambdaUsed]): # HINT: THIS IS WERE TO ADD AOD AS RETRIEVAL INPUT\
                     AEROaod = angstrmIntrp(seg.AERO_LAMDA, seg.aod[nowInd[0],:], wl) if incldAERO else np.nan
                     msTyp = np.r_[41] if np.isnan(AEROaod) else np.r_[41, 12] # normalized radiances, AOD
