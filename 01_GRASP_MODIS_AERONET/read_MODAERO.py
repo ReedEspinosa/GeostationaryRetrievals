@@ -108,32 +108,36 @@ class modaeroDB(object):
         lndPrct = 0 # b/c ocean only for now
         graspObjs = []
         measLwrBnd = 0.00001 # minimum allowed value for radiance and AOD
-        lambdaUsed = slice(0,7) # only use first 7 lambda for now
+        lambdaUsed = slice(0,7) # only use first 7 lambda for now, must be in ascending order
         for seg in self.siteSegment:
             gObj = graspRun(pathYAML, orbHghtKM, dirGRASP)
             gObj.AUX_dict = []
-            unqDTs = np.unique(seg.mod_loc[:,-1])
-#            unqDTs = np.unique(seg.mod_loc[:,-1])[0:3] # HACK to make run faster
+#            unqDTs = np.unique(seg.mod_loc[:,-1])
+            unqDTs = np.unique(seg.mod_loc[:,-1])[0:3] # HACK to make run faster
             for unqDT in unqDTs:
                 nowInd = np.nonzero(seg.mod_loc[:,-1] == unqDT)[0]
-                nowPix = pixel(unqDT, 1, 1, seg.aero_loc[3], seg.aero_loc[2], seg.aero_loc[1], lndPrct)
-                aodAERO = seg.aod[nowInd[0],:]
-                aodDT = np.mean(seg.modDT_aod[nowInd,:], axis=0)
-                metaData = np.mean(seg.metaData[nowInd,:], axis=0)
-                gObj.AUX_dict.append({'aodAERO':aodAERO, 'aodDT':aodDT, 'metaData':metaData})
-                for i,wl in enumerate(seg.MOD_LAMDA[lambdaUsed]): # HINT: THIS IS WERE TO ADD AOD AS RETRIEVAL INPUT\
-                    AEROaod = angstrmIntrp(seg.AERO_LAMDA, seg.aod[nowInd[0],:], wl) if incldAERO else np.nan
-                    msTyp = np.r_[41] if np.isnan(AEROaod) else np.r_[41, 12] # normalized radiances, AOD
+                MODlon = np.mean(seg.mod_loc[nowInd, 3])
+                MODlat = np.mean(seg.mod_loc[nowInd, 2])
+                nowPix = pixel(unqDT, 1, 1, MODlon, MODlat, seg.aero_loc[1], lndPrct)
+                aodAERO = np.zeros(lambdaUsed.stop)
+                for i,wl in enumerate(seg.MOD_LAMDA[lambdaUsed]): 
+                    aodAERO[i] = angstrmIntrp(seg.AERO_LAMDA, seg.aod[nowInd[0],:], wl)
+                    aodAEROinpt = aodAERO[i] if incldAERO else np.nan
+                    msTyp = np.r_[41] if np.isnan(aodAEROinpt) else np.r_[41, 12] # normalized radiances, AOD
                     nip = msTyp.shape[0]  
                     sza = np.mean(seg.geom[nowInd, 0])
                     mu = np.cos(sza*np.pi/180) # [0] needed b/c sza might have dummyAng at end
-                    dummyAng = [] if np.isnan(AEROaod) else 0
+                    dummyAng = [] if np.isnan(aodAEROinpt) else 0
                     thtv = np.r_[np.mean(seg.geom[nowInd, 2]), dummyAng]
                     phi = np.r_[np.mean(seg.geom[nowInd, 1] - seg.geom[nowInd, 3]), dummyAng]
                     radiance = max(np.mean(seg.rflct[nowInd,i])*mu, measLwrBnd) # MODIS R=L/FO*pi/mu0; GRASP R=L/FO*pi w/ R>1e-6                      
-                    AEROaod =  [] if np.isnan(AEROaod) else max(AEROaod, measLwrBnd)
-                    nowPix.addMeas(wl, msTyp, np.repeat(1, nip), sza, thtv, phi, np.r_[radiance, AEROaod])
+                    aodAEROinpt =  [] if np.isnan(aodAEROinpt) else max(aodAEROinpt, measLwrBnd)
+                    nowPix.addMeas(wl, msTyp, np.repeat(1, nip), sza, thtv, phi, np.r_[radiance, aodAEROinpt])
                 gObj.addPix(nowPix)
+                aodDT = np.mean(seg.modDT_aod[nowInd,:], axis=0)
+                metaData = np.mean(seg.metaData[nowInd,:], axis=0) # glint angle, wind speed NCEP
+                aero_loc = seg.aero_loc # siteID, elev, lat, lon
+                gObj.AUX_dict.append({'aodAERO':aodAERO, 'aodDT':aodDT, 'metaData':metaData, 'AEROloc':aero_loc})
             graspObjs.append(gObj)
         return graspObjs
             
