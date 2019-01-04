@@ -112,8 +112,8 @@ class modaeroDB(object):
         for seg in self.siteSegment:
             gObj = graspRun(pathYAML, orbHghtKM, dirGRASP)
             gObj.AUX_dict = []
-#            unqDTs = np.unique(seg.mod_loc[:,-1])
-            unqDTs = np.unique(seg.mod_loc[:,-1])[0:3] # HACK to make run faster
+            unqDTs = np.unique(seg.mod_loc[:,-1])
+#            unqDTs = np.unique(seg.mod_loc[:,-1])[0:3] # HACK to make run faster
             for unqDT in unqDTs:
                 nowInd = np.nonzero(seg.mod_loc[:,-1] == unqDT)[0]
                 MODlon = np.mean(seg.mod_loc[nowInd, 3])
