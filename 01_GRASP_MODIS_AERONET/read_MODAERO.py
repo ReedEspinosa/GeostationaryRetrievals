@@ -46,6 +46,8 @@ class modaeroDB(object):
         warnings.filterwarnings('ignore', message="invalid value encountered in less_equal") # HDF has "-np.nan" sometimes 
         fileData[fileData <= -9999] = np.nan
         warnings.resetwarnings()
+        fileData = fileData[np.all(fileData[:, self.MOD_AOD_IND]>0, axis=1), :] # DT AOD <=0 is bad sign
+        fileData = fileData[np.all(fileData[:, self.RFLCT_IND]>0, axis=1), :] # R <=0 is also a bad sign
         self.rflct = np.block([[self.rflct], [fileData[:, self.RFLCT_IND]]])
         self.aod = np.block([[self.aod], [fileData[:, self.AOD_IND]]])
         self.mod_loc = np.block([[self.mod_loc], [fileData[:, self.MOD_LOC_IND]]])
@@ -176,19 +178,22 @@ class aeroSite(object):
         self.AERO_LAMDA = AERO_LAMDA
         self.rflct = np.array([]).reshape(0,MOD_LAMDA.shape[0])
         self.aod = np.array([]).reshape(0,AERO_LAMDA.shape[0])
-        self.mod_loc = np.array([]) # we don't know Ncol for the rest
-        self.geom = np.array([])
-        self.metaData = np.array([])
-        self.modDT_aod = np.array([])        
+        # we don't know Ncol yet for the rest of the variablws
         self.Nmeas = 0;
                
-    def addMeas(self, rflct, aod, mod_loc, geom, modDT_aod=False, metaData=False):
+    def addMeas(self, rflct, aod, mod_loc, geom, modDT_aod=[], metaData=[]):
         self.rflct = np.vstack([self.rflct, rflct])
         self.aod = np.vstack([self.aod, aod])
-        self.mod_loc = np.vstack([self.mod_loc, mod_loc]) if self.mod_loc.size else mod_loc
-        self.geom = np.vstack([self.geom, geom]) if self.geom.size else geom
-        self.metaData = np.vstack([self.metaData, metaData]) if self.metaData.size else metaData
-        self.modDT_aod = np.vstack([self.modDT_aod, modDT_aod]) if self.modDT_aod.size else modDT_aod
+        if self.Nmeas == 0:
+            self.mod_loc = mod_loc.reshape(1,-1)
+            self.geom = geom.reshape(1,-1)
+            if len(modDT_aod)>0: self.modDT_aod = modDT_aod.reshape(1,-1)
+            if len(metaData)>0: self.metaData = metaData.reshape(1,-1)
+        else:
+            self.mod_loc = np.vstack([self.mod_loc, mod_loc])
+            self.geom = np.vstack([self.geom, geom])            
+            if len(modDT_aod)>0: self.modDT_aod = np.vstack([self.modDT_aod, modDT_aod])
+            if len(metaData)>0: self.metaData = np.vstack([self.metaData, metaData])
         self.Nmeas += 1
               
     def condenceAOD(self): # HINT: we may want to "condence" AERONET AOD to MODIS wavelengths here
