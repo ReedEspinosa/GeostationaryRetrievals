@@ -12,8 +12,10 @@ from runGRASP import graspRun, pixel
 from miscFunctions import angstrmIntrp
 
 class modaeroDB(object):
-    MOD_LAMDA = np.array([0.469, 0.555, 0.645, 0.8585, 1.24, 1.64, 2.13, 0.412, 0.443, 0.745])
-    RFLCT_IND = np.r_[117:127]    
+#    MOD_LAMDA = np.array([0.469, 0.555, 0.645, 0.8585, 1.24, 1.64, 2.13, 0.412, 0.443, 0.745])
+#    RFLCT_IND = np.r_[117:127] # HINT 0.745um channel is zero at high AOD... remove it for now
+    MOD_LAMDA = np.array([0.469, 0.555, 0.645, 0.8585, 1.24, 1.64, 2.13, 0.412, 0.443])
+    RFLCT_IND = np.r_[117:126]
     AERO_LAMDA = np.array([1.64, 1.02, 0.87, 0.865, 0.779, 0.675, 0.667, 0.62, 0.56, 0.555, 0.551, 0.532, 0.531, 0.51, 0.5, 0.49, 0.443, 0.44, 0.412, 0.4, 0.38, 0.34, 0.554])
     AOD_IND = np.r_[2:25] 
     MOD_LOC_IND = np.r_[0:2, 50:52] # year, day, LAT, LON, DATENUM* (*added after calling sortData())
@@ -80,12 +82,10 @@ class modaeroDB(object):
     def groupData(self, siteIDFrc=False):
         if not self.sorted:
             self.sortData()
-        if siteIDFrc:
-            if type(siteIDFrc) is not list:
-                siteList = [siteIDFrc]
-            else:
-                siteList = siteIDFrc
+        if (type(siteIDFrc) is not bool):
+            siteList = np.array(siteIDFrc).flatten()
         else:
+            assert not siteIDFrc, "siteIDFrc was true but it should either be False or contain the siteIDs to include..."
             siteList = np.unique(self.aero_loc[:,0])
         datenumSep = np.diff(self.mod_loc[:, -1]) # below won't catch same site on consecutive orbits,last of orbit != 0
         datenumSep[np.abs(np.diff(self.aero_loc[:,0]))>0] = -1 # in case same time registers at two sites

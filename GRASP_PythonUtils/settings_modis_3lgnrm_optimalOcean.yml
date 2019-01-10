@@ -50,7 +50,7 @@ retrieval:
        noise[3]:
            standard_deviation_synthetic: 0.0
            error_type:   absolute
-           standard_deviation:  0.005
+           standard_deviation:  0.002
            measurement_type[1]:
                type: AOD
                index_of_wavelength_involved: [1,  2, 3, 4, 5, 6, 7 ]
