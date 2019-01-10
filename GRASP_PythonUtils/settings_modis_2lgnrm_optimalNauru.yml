@@ -123,8 +123,8 @@ retrieval:
             mode[1]: 
                 initial_guess: 
                     value:                        [0.14,      0.51]
-                    min:                           [0.124,    0.42]
-                    max:                          [0.153,    0.56]
+                    min:                           [0.125,    0.39]
+                    max:                          [0.163,   0.56]
                     index_of_wavelength_involved: [0,     0]
                 single_pixel:
                     a_priori_estimates:
