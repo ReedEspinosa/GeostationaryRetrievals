@@ -47,13 +47,13 @@ retrieval:
             measurement_type[1]:
                 type: I
                 index_of_wavelength_involved: [ 2, 3, 4, 5, 6, 7 ]
-#        noise[3]:
-#            standard_deviation_synthetic: 0.0
-#            error_type:   absolute
-#            standard_deviation:  0.002
-#            measurement_type[1]:
-#                type: AOD
-#                index_of_wavelength_involved: [1,  2, 3, 4, 5, 6, 7 ]
+       noise[3]:
+           standard_deviation_synthetic: 0.0
+           error_type:   absolute
+           standard_deviation:  0.002
+           measurement_type[1]:
+               type: AOD
+               index_of_wavelength_involved: [1,  2, 3, 4, 5, 6, 7 ]
 
     radiative_transfer:
         number_of_layers: 50 # 50->5 ~5% AOD change, 15% speed up
@@ -229,8 +229,8 @@ retrieval:
                        lagrange_multiplier_of_T_variability: 1.0e-6
             mode[3]: 
                 initial_guess: 
-                    value:                        [0.015]
-                    min:                          [0.001]
+                    value:                        [0.0005]
+                    min:                          [0.0001]
                     max:                          [2.00]
                     index_of_wavelength_involved: [0]
                 single_pixel:
