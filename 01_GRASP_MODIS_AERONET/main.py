@@ -4,6 +4,7 @@
 import sys
 import os
 import warnings
+import numpy as np
 from read_MODAERO import modaeroDB
 sys.path.append(os.path.join("..", "GRASP_PythonUtils"))
 from runGRASP import graspDB
@@ -23,14 +24,16 @@ basePath = '/home/respinosa/ReedWorking/'
 binPathGRASP = '/home/respinosa/ReedWorking/Local_Code_MacBook/grasp_open/build/bin/grasp'
 maxCPUs = 28 # max simaltanous instances of GRASP
 
-orbHght = 713 # km
 #siteID 9=Wallops, 210=Nauru, 106=Ascension Island, 919=Fukue(Japan), 58=Cape Verde, Honolulu=97, Amr. Somoa=1185, Midway=278, Stennis=NOLA
-#siteID = [210, 9, 106, 919, 58, 97, 1185, 278, 243, 908, 809, 210, 103, 1101, 739, 383, 916, 475, 436, 667] # can be int or list (not numpy array)
-siteID = [987, 352, 119, 392, 769, 793, 1031, 187, 962, 469, 471, 470, 543, 461, 467, 906, 1108, 1109, 1114, 507, 256] # DUST SITES
-saveNPZ = False
-incldAERO = True # Include AERONET AOD as input to retrieval
+siteID_global = [210, 9, 106, 919, 58, 97, 1185, 278, 243, 908, 809, 210, 103, 1101, 739, 383, 916, 475, 436, 667] # globaly representative samplw
+siteID_dust = [987, 352, 119, 392, 769, 793, 1031, 187, 962, 469, 471, 470, 543, 461, 467, 906, 1108, 1109, 1114, 507, 256] # DUST SITES
+siteID = np.unique(np.r_[siteID_global, siteID_dust])
 
-savePath = os.path.join(basePath, 'Working/MODAERO_retrievalPickles/Terra_DUSTsites_33e1550YAML_3lgnrm_AEROforced_V2b.pkl')  # Save results here
+orbHght = 713 # km
+saveNPZ = False
+incldAERO = False # Include AERONET AOD as input to retrieval
+
+savePath = os.path.join(basePath, 'Working/MODAERO_retrievalPickles/Terra_DUSTsites_49519b9YAML_3lgnrm_V2b.pkl')  # Save results here
 #npzPath = os.path.join(basePath, 'Remote_Sensing_Projects/GRASP_MODIS/Ocean_MYD04_L2_C61_V2a.out.npz') # Use AQUA Data
 #dirPath = os.path.join(basePath, 'Remote_Sensing_Projects/GRASP_MODIS/oceanV2/MYD*.out') 
 npzPath = os.path.join(basePath, 'Remote_Sensing_Projects/GRASP_MODIS/Ocean_MOD04_L2_C61_V2b.out.npz') # Use Terra Data
