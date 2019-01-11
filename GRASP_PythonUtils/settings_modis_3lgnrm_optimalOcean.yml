@@ -47,13 +47,13 @@ retrieval:
             measurement_type[1]:
                 type: I
                 index_of_wavelength_involved: [ 2, 3, 4, 5, 6, 7 ]
-       noise[3]:
-           standard_deviation_synthetic: 0.0
-           error_type:   absolute
-           standard_deviation:  0.002
-           measurement_type[1]:
-               type: AOD
-               index_of_wavelength_involved: [1,  2, 3, 4, 5, 6, 7 ]
+#       noise[3]:
+#           standard_deviation_synthetic: 0.0
+#           error_type:   absolute
+#           standard_deviation:  0.002
+#           measurement_type[1]:
+#               type: AOD
+#               index_of_wavelength_involved: [1,  2, 3, 4, 5, 6, 7 ]
 
     radiative_transfer:
         number_of_layers: 50 # 50->5 ~5% AOD change, 15% speed up
@@ -145,9 +145,9 @@ retrieval:
                        lagrange_multiplier_of_T_variability: 5.0e3
             mode[2]: 
                 initial_guess: 
-                    value:                        [0.8, 0.6]
-                    min:                          [0.35,  0.4]
-                    max:                          [1.5,    0.77]
+                    value:                        [1.25, 0.59]
+                    min:                           [0.45,  0.4]
+                    max:                          [1.55,    0.77]
                     index_of_wavelength_involved: [0,     0]
                 single_pixel:
                     a_priori_estimates:
@@ -165,7 +165,7 @@ retrieval:
                        lagrange_multiplier_of_T_variability: 5.0e3
             mode[3]: 
                 initial_guess: 
-                    value:                        [3.0,  0.6]
+                    value:                        [3.15,  0.63]
                     min:                           [2.65,  0.56]
                     max:                          [4.4,  0.666]
                     index_of_wavelength_involved: [0,     0]
@@ -451,7 +451,7 @@ retrieval:
                        lagrange_multiplier_of_T_variability: 5.0e3
             mode[2]:
                 initial_guess:                      #1      
-                    value:                          [0.9995   ]
+                    value:                          [0.95  ]
                     min:                            [0.9 ]
                     max:                            [0.99999]
                     index_of_wavelength_involved:   [0     ]
