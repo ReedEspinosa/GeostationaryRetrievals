@@ -147,7 +147,7 @@ retrieval:
                 initial_guess: 
                     value:                        [1.77, 0.6]
                     min:                          [0.35,  0.4]
-                    max:                          [2.7,    0.77]
+                    max:                          [1.5,    0.77]
                     index_of_wavelength_involved: [0,     0]
                 single_pixel:
                     a_priori_estimates:
@@ -435,7 +435,7 @@ retrieval:
                 initial_guess:                      #1      
                     value:                          [0.9995   ]
                     min:                            [0.99 ]
-                    max:                            [0.9999]
+                    max:                            [0.99999]
                     index_of_wavelength_involved:   [0     ]
                 single_pixel:
                     smoothness_constraints:
@@ -452,8 +452,8 @@ retrieval:
             mode[2]:
                 initial_guess:                      #1      
                     value:                          [0.9995   ]
-                    min:                            [0.45 ]
-                    max:                            [0.9999]
+                    min:                            [0.9 ]
+                    max:                            [0.99999]
                     index_of_wavelength_involved:   [0     ]
                 single_pixel:
                     smoothness_constraints:
