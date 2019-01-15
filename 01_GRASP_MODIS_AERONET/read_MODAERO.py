@@ -13,21 +13,38 @@ from miscFunctions import angstrmIntrp
 
 class modaeroDB(object):
     
-    def __init__(self, dataFrmt='ocean', loadPath=None, maxNtPerSeg=120):
+    def __init__(self, loadPath=None, dataFrmt='ocean', maxNtPerSeg=120):
         self.GRP_DAY_LMT = np.r_[maxNtPerSeg] # maximum nt in GRASP build, each site seg will have this many unique datenums
+        if loadPath is None or not self.loadData(loadPath):
+            self.setConstants(dataFrmt)
+            self.rflct = np.array([]).reshape(0,self.RFLCT_IND.shape[0])
+            self.aod = np.array([]).reshape(0,self.AOD_IND.shape[0])        
+            self.mod_loc = np.array([]).reshape(0,self.MOD_LOC_IND.shape[0])
+            self.aero_loc = np.array([]).reshape(0,self.AERO_LOC_IND.shape[0])
+            self.geom = np.array([]).reshape(0,self.GEOM_IND.shape[0])
+            self.metaData = np.array([]).reshape(0,self.META_IND.shape[0])
+            self.modDT_aod = np.array([]).reshape(0,self.MOD_AOD_IND.shape[0])
+            self.modDB_aod = np.array([]).reshape(0,self.DB_AOD_IND.shape[0])
+            self.sorted = False
+        elif not dataFrmt.lower() == self.surfType: # the data was loaded but didn't match surface type
+            warnings.warn('The loaded data was for %s but dataFrmt was set to %s' % (self.surfType, dataFrmt))
+        self.siteSegment = [] # grouped data is after saving stage
+        
+    def setConstants(self, dataFrmt):
         self.MOD_LAMDA = np.r_[0.469, 0.555, 0.645, 0.8585, 1.24, 1.64, 2.13, 0.412, 0.443]
         self.AERO_LAMDA = np.r_[1.64, 1.02, 0.87, 0.865, 0.779, 0.675, 0.667, 0.62, 0.56, 0.555, 0.551, 0.532, 0.531, 0.51, 0.5, 0.49, 0.443, 0.44, 0.412, 0.4, 0.38, 0.34, 0.554]
         self.AOD_IND = np.r_[2:25] # lambda above; next 4 are currently in same spot for land & ocean
         self.MOD_LOC_IND = np.r_[0:2, 50:52] # year, day, LAT, LON, DATENUM* (*added after calling sortData())
         self.AERO_LOC_IND = np.r_[46:50] # SITE_ID, ELEV, LAT, LON
         self.GEOM_IND = np.r_[52:57] # SOL_ZEN, SOL_AZM, SEN_ZEN, SEN_ASM, SCAT_ANG
-        if dataFrmt.lower()=='ocean':
+        self.surfType = dataFrmt.lower()
+        if self.surfType=='ocean':
             self.MOD_AOD_LAMDA = np.r_[0.469, 0.555, 0.645, 0.8585, 1.24, 1.64, 2.13]
             self.MOD_AOD_IND = np.r_[71:78] # DT retrieved AOD "Average", wavelengths 1st seven values of MOD_LAMDA
             self.RFLCT_IND = np.r_[117:126] #N=9
             self.META_IND = np.r_[142:144] # GLINT_ANG, WIND_SPEED
-        elif dataFrmt.lower()=='land':
-            self.MOD_AOD_LAMDA = np.r_[0.469, 0.555, 0.645, 2.13] # TODO: this and the two after MOD_AOD_IND need to be stored in rslts
+        elif self.surfType=='land':
+            self.MOD_AOD_LAMDA = np.r_[0.469, 0.555, 0.645, 2.13]
             self.MOD_AOD_IND = np.r_[62:66] # DT retrieved AOD "Average", wavelengths 1st seven values of MOD_LAMDA
             self.DB_AOD_LAMDA = np.r_[0.412, 0.469, 0.555, 0.645]
             self.DB_AOD_IND = np.r_[107, 108, 106, 109]
@@ -39,17 +56,7 @@ class modaeroDB(object):
             +self.AOD_IND.tostring()+self.MOD_LOC_IND.tostring()+self.AERO_LOC_IND.tostring()
             +self.GEOM_IND.tostring()+self.MOD_AOD_IND.tostring()+self.DB_AOD_IND.tostring()+self.META_IND.tostring())
         self.SET_HASH = np.frombuffer(hashObj.digest(), dtype='uint32')[0] # we convert the first 32 bits to unsigned int
-        if loadPath is None or not self.loadData(loadPath):            
-            self.rflct = np.array([]).reshape(0,self.RFLCT_IND.shape[0])
-            self.aod = np.array([]).reshape(0,self.AOD_IND.shape[0])        
-            self.mod_loc = np.array([]).reshape(0,self.MOD_LOC_IND.shape[0])
-            self.aero_loc = np.array([]).reshape(0,self.AERO_LOC_IND.shape[0])
-            self.geom = np.array([]).reshape(0,self.GEOM_IND.shape[0])
-            self.metaData = np.array([]).reshape(0,self.META_IND.shape[0])
-            self.modDT_aod = np.array([]).reshape(0,self.MOD_AOD_IND.shape[0])
-            self.modDB_aod = np.array([]).reshape(0,self.DB_AOD_IND.shape[0])
-            self.sorted = False 
-        self.siteSegment = [] # grouped data is after saving stage
+
         
     def readFile(self, filePath):
         warnings.filterwarnings('ignore', message="some errors were detected") # HDF load error lines will produce warnings
@@ -118,8 +125,8 @@ class modaeroDB(object):
         [seg.condenceAOD() for seg in self.siteSegment] # Remove unused AOD wavelengths
         return self.siteSegment
                              
-    def graspPackData(self, pathYAML, incldAERO=False, orbHghtKM=713, dirGRASP=False): # HINT: THIS WILL CHANGE FOR ix>1, land and AERONET included
-        lndPrct = 0 # b/c ocean only for now
+    def graspPackData(self, pathYAML, incldAERO=False, orbHghtKM=713, dirGRASP=False): # HINT: THIS WILL CHANGE FOR ix>1
+        lndPrct = 100*np.int(self.surfType=='land')
         graspObjs = []
         measLwrBnd = 0.00001 # minimum allowed value for radiance and AOD
         lambdaUsed = slice(0,7) # only use first 7 lambda for now, must be in ascending order
@@ -150,7 +157,7 @@ class modaeroDB(object):
                 gObj.addPix(nowPix)
                 aodDT = np.mean(seg.modDT_aod[nowInd,:], axis=0)
                 aodDB = np.mean(seg.modDB_aod[nowInd,:], axis=0)
-                metaData = np.mean(seg.metaData[nowInd,:], axis=0) # glint angle, wind speed NCEP
+                metaData = np.mean(seg.metaData[nowInd,:], axis=0)
                 aero_loc = seg.aero_loc # siteID, elev, lat, lon
                 gObj.AUX_dict.append({'aodAERO':aodAERO, 'lambdaDT':self.MOD_AOD_LAMDA, 'aodDT':aodDT,
                                       'lambdaDB':self.DB_AOD_LAMDA, 'aodDB':aodDB, 'metaData':metaData, 'AEROloc':aero_loc})
@@ -163,7 +170,7 @@ class modaeroDB(object):
             return False
         np.savez_compressed(filePath, rflct=self.rflct, aod=self.aod, mod_loc=self.mod_loc,
                             aero_loc=self.aero_loc, geom=self.geom, set_hash=self.SET_HASH, metaData=self.metaData,
-                            sort=self.sorted, modDT_aod=self.modDT_aod, modDT_aod=self.modDB_aod)
+                            sort=self.sorted, modDT_aod=self.modDT_aod, modDT_aod=self.modDB_aod, surfType=self.surfType)
         return True
         
     def loadData(self, filePath):
@@ -171,8 +178,14 @@ class modaeroDB(object):
             warnings.warn('The file '+filePath+' does not exist!', stacklevel=2)
             return False
         loaded = np.load(filePath)
+        if ('surfType' in loaded.keys()):
+            self.setConstants(loaded['surfType'])
+        else:
+            self.setConstants('ocean')
         if not np.equal(self.SET_HASH,loaded['set_hash']): # we need equal() because loaded set_hash is numpy array
-            warnings.warn('The setting hash of the loaded file does not match the current defaults! Discarding loaded data...', stacklevel=2)
+            str1='The setting hash of the loaded file does not match the current hash, discarding loaded data...'
+            str2='\nDid the indices in read_MODAERO change since the file was saved?'
+            warnings.warn(str1+str2, stacklevel=2)
             return False
         self.rflct = loaded['rflct']
         self.aod = loaded['aod']
@@ -213,7 +226,7 @@ class aeroSite(object):
             if len(metaData)>0: self.metaData = np.vstack([self.metaData, metaData])
         self.Nmeas += 1
               
-    def condenceAOD(self): # HINT: we may want to "condence" AERONET AOD to MODIS wavelengths here
+    def condenceAOD(self):
         emptyInd = np.isnan(self.aod).all(0)
         if np.sum(~emptyInd) < 5:
             warnings.warn('Less than 5 valid wavelengths found at AERONET site %d' % self.aero_loc[0])        
