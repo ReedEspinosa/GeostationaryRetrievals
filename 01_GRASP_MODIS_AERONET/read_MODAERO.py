@@ -43,18 +43,20 @@ class modaeroDB(object):
             self.MOD_AOD_IND = np.r_[71:78] # DT retrieved AOD "Average", wavelengths 1st seven values of MOD_LAMDA
             self.RFLCT_IND = np.r_[117:126] #N=9
             self.META_IND = np.r_[142:144] # GLINT_ANG, WIND_SPEED
+            extHashStr = self.MOD_AOD_IND.tostring()+self.META_IND.tostring() 
         elif self.surfType=='land':
             self.MOD_AOD_LAMDA = np.r_[0.469, 0.555, 0.645, 2.13]
             self.MOD_AOD_IND = np.r_[62:66] # DT retrieved AOD "Average", wavelengths 1st seven values of MOD_LAMDA
             self.DB_AOD_LAMDA = np.r_[0.412, 0.469, 0.555, 0.645]
-            self.DB_AOD_IND = np.r_[107, 108, 106, 109]
+            self.DB_AOD_IND = np.r_[107, 108, 106, 109] # TODO: what if these aren't defined (i.e. ocean)?
             self.RFLCT_IND = np.r_[77:88] # N=9 OR do we want to include DB reflectances too?
             self.META_IND = np.r_[60,121] # Aerosol_Type, altitude_land
+            extHashStr = self.MOD_AOD_IND.tostring()+self.DB_AOD_IND.tostring()+self.META_IND.tostring()
         else:
             assert False, 'Unrecognized dataFrmt string, land or ocean?'
-        hashObj = hashlib.sha1(self.MOD_LAMDA.tostring()+self.RFLCT_IND.tostring()+self.AERO_LAMDA.tostring()
-            +self.AOD_IND.tostring()+self.MOD_LOC_IND.tostring()+self.AERO_LOC_IND.tostring()
-            +self.GEOM_IND.tostring()+self.MOD_AOD_IND.tostring()+self.DB_AOD_IND.tostring()+self.META_IND.tostring())
+        hashObj = hashlib.sha1(self.MOD_LAMDA.tostring()+self.RFLCT_IND.tostring()
+                  +self.AERO_LAMDA.tostring()+self.AOD_IND.tostring()+self.MOD_LOC_IND.tostring()
+                  +self.AERO_LOC_IND.tostring()+self.GEOM_IND.tostring()+extHashStr)
         self.SET_HASH = np.frombuffer(hashObj.digest(), dtype='uint32')[0] # we convert the first 32 bits to unsigned int
 
         
@@ -170,7 +172,7 @@ class modaeroDB(object):
             return False
         np.savez_compressed(filePath, rflct=self.rflct, aod=self.aod, mod_loc=self.mod_loc,
                             aero_loc=self.aero_loc, geom=self.geom, set_hash=self.SET_HASH, metaData=self.metaData,
-                            sort=self.sorted, modDT_aod=self.modDT_aod, modDT_aod=self.modDB_aod, surfType=self.surfType)
+                            sort=self.sorted, modDT_aod=self.modDT_aod, modDB_aod=self.modDB_aod, surfType=self.surfType)
         return True
         
     def loadData(self, filePath):

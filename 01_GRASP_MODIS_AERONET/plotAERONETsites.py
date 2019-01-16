@@ -35,7 +35,7 @@ m.bluemarble(scale=1);
 x, y = m(lon, lat)
 #plt.scatter(x, y, c='r', s=30, facecolors='none', edgecolors='r', cmap='plasma')
 plt.plot(x, y, c='r', markersize=8, marker='o', mfc='none', linestyle='none')
-[plt.text(x0,y0,'%d'%ID, color='r') for x0,y0,ID in zip(x,y,siteID)]
+#[plt.text(x0,y0,'%d'%ID, color='r') for x0,y0,ID in zip(x,y,siteID)]
 #plt.title('AERONET Sites')
 #cbar = plt.colorbar()
 ##cbar.set_label("Elevation (m)", FontSize=14)
