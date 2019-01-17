@@ -8,21 +8,21 @@ import runGRASP
 reload(runGRASP)
 from runGRASP import graspDB
 
-#rsltsFile = '/Users/wrespino/Synced/Working/MODAERO_retrievalPickles/Terra_GLOBALandDUSTsites_YAML7b69bf3_3lgnrm_V2b.pkl'
-rsltsFile = '/Users/wrespino/Synced/Working/MODAERO_retrievalPickles/Terra_GLOBALandDUSTsites_YAMLce20bcb_3lgnrm_AEROincld_V2b.pkl'
-#rsltsFile = '/Users/wrespino/Synced/Working/MODAERO_retrievalPickles/Terra_DUSTsites_02a0d00YAML_2lgnrm_V2b.pkl'
-#rsltsFile = '/Users/wrespino/Synced/Working/MODAERO_retrievalPickles/Terra_20sites_b877e92YAML_newFineMode_V2b.pkl' # NEW REINING KING
+#rsltsFile = '/Users/wrespino/Synced/Working/MODAERO_retrievalPickles/Terra_GLOBALandDUSTsites_YAML1f40704_3lgnrm_V2b.pkl'
+#rsltsFile = '/Users/wrespino/Synced/Working/MODAERO_retrievalPickles/Terra_GLOBALandDUSTsites_YAML1b95f26_DOUBLEBLUENOISE_3lgnrm_V2b.pkl'
+#rsltsFile = '/Users/wrespino/Synced/Working/MODAERO_retrievalPickles/Terra_GLOBALandDUSTsites_YAML7b69bf3_3lgnrm_V2b.pkl' # A new king!
+#rsltsFile = '/Users/wrespino/Synced/Working/MODAERO_retrievalPickles/Terra_GLOBALandDUSTsites_YAMLce20bcb_3lgnrm_AEROincld_V2b.pkl'
+rsltsFile = '/Users/wrespino/Desktop/testing.pkl'
 #rsltsFile = '/Users/wrespino/Synced/Working/MODAERO_retrievalPickles/Terra_DUSTsites_02a0d00YAML_3lgnrm_AEROforced_V2b.pkl'
 #dict_keys(['datetime', 'longitude', 'latitude', 'r', 'dVdlnr', 'rv', 'sigma', 'vol', 'sph', 'lambda', 'aod', 'aodMode', 'ssa', 'ssaMode', 'n', 'k', 'albedo', 'wtrSurf', 'brdf', 'sca_ang', 'meas_I', 'fit_I', 'aodAERO', 'aodDT', 'metaData', 'AEROloc'])
-#xVarNm = 'aodAERO'
+xVarNm = 'aodAERO'
 #yVarNm = 'aodDT'
-#yVarNm = 'aod'
-xVarNm = 'k'
-yVarNm = 'rv'
+yVarNm = 'aod'
+#xVarNm = 'vol'
+#yVarNm = 'vol'
 #yInd = [1]
 #cVarNm= 'relRes'
 cVarNm= False
-cInd= 2
 EEfunc = lambda x: 0.03+0.1*x
 
 filterSites = False
@@ -31,9 +31,10 @@ frbdnSites = np.r_[179,1146,535,840,175]
 gDB = graspDB()
 gDB.loadResults(rsltsFile)
 
-for i,rslt in enumerate(gDB.rslts):
-    relRes = (rslt['aod']-rslt['aodDT'])/(2*rslt['aod']+rslt['aodDT'])
-    gDB.rslts[i]['relRes'] = relRes
+if xVarNm=='relRes' or yVarNm=='relRes' or cVarNm=='relRes':
+    for i,rslt in enumerate(gDB.rslts):
+        relRes = (rslt['aod']-rslt['aodDT'])/(2*rslt['aod']+rslt['aodDT'])
+        gDB.rslts[i]['relRes'] = relRes
 
 if filterSites:
     siteID = [rslt['AEROloc'][0] for rslt in gDB.rslts]
@@ -43,22 +44,28 @@ else:
 
 
 # DIFF PLOTS
-#plt.figure(figsize=(10,6))
-##axHnd = plt.subplot(2,1,2)
-#for i in range(0,6):
-#    axHnd = plt.subplot(2,3,i+1)
-#    gDB.diffPlot(xVarNm, yVarNm, i, i, lambdaFuncEE=EEfunc, FS=12, rsltInds=vldInd,
-#                 pltLabel=os.path.basename(rsltsFile))
+plt.figure(figsize=(9,5))
+#axHnd = plt.subplot(2,1,2)
+Nplts=6
+for i in range(0,Nplts):
+    axHnd = plt.subplot(2,int(np.ceil(Nplts/2)),i+1)
+    gDB.diffPlot(xVarNm, yVarNm, i, i, lambdaFuncEE=EEfunc, FS=12, rsltInds=vldInd,
+                 pltLabel=os.path.basename(rsltsFile), clnLayout=(i==(Nplts-1)))
 
 # SCAT PLOTS
-plt.figure(figsize=(8,5))
+plt.figure(figsize=(9,5))
 #axHnd = plt.subplot(2,1,1)
-for i in range(0,6):
-    axHnd = plt.subplot(2,3,i+1)
-#    gDB.scatterPlot(xVarNm, yVarNm, i, i, cVarNm, cInd, one2oneScale=True, pltLabel=os.path.basename(rsltsFile),
-#                    logScl=True, customAx=axHnd, Rstats=True, rsltInds=vldInd)
-    gDB.scatterPlot(xVarNm, yVarNm, [1,i], 1, cVarNm, 1, one2oneScale=False, 
-                    logScl=False, customAx=axHnd, Rstats=False, rsltInds=vldInd)
+Nplts=6
+for i in range(0,Nplts):
+    axHnd = plt.subplot(2,int(np.ceil(Nplts/2)),i+1)
+    gDB.scatterPlot(xVarNm, yVarNm, i, i, cVarNm, 0, one2oneScale=True, pltLabel=os.path.basename(rsltsFile),
+                    logScl=True, customAx=axHnd, Rstats=True, rsltInds=vldInd, clnLayout=(i==(Nplts-1)))
+#    ind1= int(np.floor(i/2)) # 0, 0, 1
+#    ind2= int(np.ceil((i)/2)+1) # 1 2 2
+##    ind1 = i
+##    ind2 = 1
+#    gDB.scatterPlot(xVarNm, yVarNm, ind1, ind2, cVarNm, 1, one2oneScale=False, 
+#                    logScl=False, customAx=axHnd, Rstats=False, rsltInds=vldInd, clnLayout=(i==(Nplts-1)))
 
 # HIST PLOTS
 #plt.figure(figsize=(9,6))
