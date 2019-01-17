@@ -41,6 +41,8 @@ class modaeroDB(object):
         if self.surfType=='ocean':
             self.MOD_AOD_LAMDA = np.r_[0.469, 0.555, 0.645, 0.8585, 1.24, 1.64, 2.13]
             self.MOD_AOD_IND = np.r_[71:78] # DT retrieved AOD "Average", wavelengths 1st seven values of MOD_LAMDA
+            self.DB_AOD_LAMDA = np.array([], dtype=np.int)
+            self.DB_AOD_IND = np.array([], dtype=np.int)
             self.RFLCT_IND = np.r_[117:126] #N=9
             self.META_IND = np.r_[142:144] # GLINT_ANG, WIND_SPEED
             extHashStr = self.MOD_AOD_IND.tostring()+self.META_IND.tostring() 
@@ -48,8 +50,8 @@ class modaeroDB(object):
             self.MOD_AOD_LAMDA = np.r_[0.469, 0.555, 0.645, 2.13]
             self.MOD_AOD_IND = np.r_[62:66] # DT retrieved AOD "Average", wavelengths 1st seven values of MOD_LAMDA
             self.DB_AOD_LAMDA = np.r_[0.412, 0.469, 0.555, 0.645]
-            self.DB_AOD_IND = np.r_[107, 108, 106, 109] # TODO: what if these aren't defined (i.e. ocean)?
-            self.RFLCT_IND = np.r_[77:88] # N=9 OR do we want to include DB reflectances too?
+            self.DB_AOD_IND = np.r_[107, 108, 106, 109]
+            self.RFLCT_IND = np.r_[77:86] # N=9 OR do we want to include DB reflectances too?
             self.META_IND = np.r_[60,121] # Aerosol_Type, altitude_land
             extHashStr = self.MOD_AOD_IND.tostring()+self.DB_AOD_IND.tostring()+self.META_IND.tostring()
         else:
@@ -61,12 +63,14 @@ class modaeroDB(object):
 
         
     def readFile(self, filePath):
-        warnings.filterwarnings('ignore', message="some errors were detected") # HDF load error lines will produce warnings
+#        warnings.filterwarnings('ignore', message="some errors were detected") # "HDF load error" lines will produce warnings
         fileData = np.genfromtxt(filePath, delimiter='  ', invalid_raise=False) 
-        warnings.resetwarnings()
+#        warnings.resetwarnings()
         warnings.filterwarnings('ignore', message="invalid value encountered in less_equal") # HDF has "-np.nan" sometimes 
         fileData[fileData <= -9999] = np.nan
         warnings.resetwarnings()
+        assert np.r_[self.RFLCT_IND,self.META_IND].max()<fileData.shape[1], \
+            'Some indices exceeded the number of columns in the text file.\n Is %s really %s pixels?' % (filePath, self.surfType)
         fileData = fileData[np.all(fileData[:, self.MOD_AOD_IND]>0, axis=1), :] # DT AOD <=0 is bad sign
         fileData = fileData[np.all(fileData[:, self.RFLCT_IND]>0, axis=1), :] # R <=0 is also a bad sign
         self.rflct = np.block([[self.rflct], [fileData[:, self.RFLCT_IND]]])
@@ -76,11 +80,12 @@ class modaeroDB(object):
         self.geom = np.block([[self.geom], [fileData[:, self.GEOM_IND]]])
         self.metaData = np.block([[self.metaData], [fileData[:, self.META_IND]]])
         self.modDT_aod = np.block([[self.modDT_aod], [fileData[:, self.MOD_AOD_IND]]])
-        self.modDB_aod = np.block([[self.modDB_aod], [fileData[:, self.MOD_AOD_IND]]])
+        self.modDB_aod = np.block([[self.modDB_aod], [fileData[:, self.DB_AOD_IND]]])
         self.sorted = False     
 
     def readDIR(self, dirPath):
         filePaths = glob.glob(dirPath)
+        assert not len(filePaths)==0, 'No text files found matching pattern:\n%s' % dirPath
         print('%3d files found...' % np.shape(filePaths)[0])
         for filePath in filePaths:
             print('  %s' % filePath)
@@ -180,8 +185,10 @@ class modaeroDB(object):
             warnings.warn('The file '+filePath+' does not exist!', stacklevel=2)
             return False
         loaded = np.load(filePath)
+        if loaded['mod_loc'].shape[0]==0:
+            warnings.warn('The NPZ file was loaded but no MODIS colocations were found in the data.')
         if ('surfType' in loaded.keys()):
-            self.setConstants(loaded['surfType'])
+            self.setConstants(str(loaded['surfType']))
         else:
             self.setConstants('ocean')
         if not np.equal(self.SET_HASH,loaded['set_hash']): # we need equal() because loaded set_hash is numpy array
@@ -217,15 +224,15 @@ class aeroSite(object):
         if self.Nmeas == 0:
             self.mod_loc = mod_loc.reshape(1,-1)
             self.geom = geom.reshape(1,-1)
-            if len(modDT_aod)>0: self.modDT_aod = modDT_aod.reshape(1,-1)
-            if len(modDB_aod)>0: self.modDB_aod = modDB_aod.reshape(1,-1)
-            if len(metaData)>0: self.metaData = metaData.reshape(1,-1)
+            self.modDT_aod = modDT_aod.reshape(1,-1)
+            self.modDB_aod = modDB_aod.reshape(1,-1)
+            self.metaData = metaData.reshape(1,-1)
         else:
             self.mod_loc = np.vstack([self.mod_loc, mod_loc])
             self.geom = np.vstack([self.geom, geom])            
-            if len(modDT_aod)>0: self.modDT_aod = np.vstack([self.modDT_aod, modDT_aod])
-            if len(modDB_aod)>0: self.modDB_aod = np.vstack([self.modDB_aod, modDB_aod])
-            if len(metaData)>0: self.metaData = np.vstack([self.metaData, metaData])
+            self.modDT_aod = np.vstack([self.modDT_aod, modDT_aod])
+            self.modDB_aod = np.vstack([self.modDB_aod, modDB_aod])
+            self.metaData = np.vstack([self.metaData, metaData])
         self.Nmeas += 1
               
     def condenceAOD(self):
