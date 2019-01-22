@@ -364,7 +364,7 @@ retrieval:
                         derivative_order_of_T_variability:    1
                         lagrange_multiplier_of_T_variability: 5.0e3
      
-        characteristic[6]: 
+        characteristic[5]: 
             type: sphere_fraction
             retrieved: true
             mode[1]:

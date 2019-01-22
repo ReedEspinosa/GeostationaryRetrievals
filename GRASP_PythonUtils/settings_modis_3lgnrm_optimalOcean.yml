@@ -50,7 +50,7 @@ retrieval:
 #        noise[3]:
 #            standard_deviation_synthetic: 0.0
 #            error_type:   absolute
-#            standard_deviation:  0.002
+#            standard_deviation:  0.005
 #            measurement_type[1]:
 #                type: AOD
 #                index_of_wavelength_involved: [1,  2, 3, 4, 5, 6, 7 ]
@@ -369,9 +369,12 @@ retrieval:
             retrieved: true
             mode[1]:    
                 initial_guess:                       #1      #2      #3      #4      #5      #6      #7       
-                    value:                          [0.02,    0.013,   0.0065,   0.0035, 0.003,  0.0025,  0.002  ]
-                    min:                            [0.003,   0.001,   0.0001, 0.0001, 0.00001, 0.00001, 0.00001 ]
-                    max:                            [0.045,   0.035,   0.025,   0.015,   0.01,   0.01,   0.01   ]
+#                    value:                          [0.02,    0.013,   0.0065,   0.0035, 0.003,  0.0025,  0.002  ]
+#                    min:                            [0.003,   0.001,   0.0001, 0.0001, 0.00001, 0.00001, 0.00001 ]
+#                    max:                            [0.045,   0.035,   0.025,   0.015,   0.01,   0.01,   0.01   ]
+                    value:                          [0.02720, 0.01593, 0.00837, 0.00462, 0.00345, 0.00263, 0.00197]
+                    min:                            [0.00626, 0.00667, 0.00221, 0.00039, 0.00067, 0.00005, 0.00018]
+                    max:                            [0.05225, 0.04665, 0.03025, 0.02145, 0.01747, 0.01165, 0.00888]
                     index_of_wavelength_involved:   [1,      2,      3,      4,      5,      6,      7      ]
                 single_pixel:
                     a_priori_estimates:
@@ -386,7 +389,7 @@ retrieval:
                         derivative_order_of_Y_variability:    1
                         lagrange_multiplier_of_Y_variability: 1.0e-3
                         derivative_order_of_T_variability:    1
-                        lagrange_multiplier_of_T_variability: 1.0e4 
+                        lagrange_multiplier_of_T_variability: 1.0e4
 
             mode[2]:
                 initial_guess:                       #1      #2      #3      #4      #5      #6      #7       
