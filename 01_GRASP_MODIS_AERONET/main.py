@@ -44,7 +44,7 @@ npzPath = os.path.join(basePath, 'Remote_Sensing_Projects/GRASP_MODIS/Ocean_MOD0
 dirPath = os.path.join(basePath, 'Remote_Sensing_Projects/GRASP_MODIS/oceanV2/MOD*.out') 
 fileType = 'ocean' # 'land' or 'ocean'
 
-savePath = os.path.join(basePath, 'Working/MODAERO_retrievalPickles_land/TerraOcean_GLOBALandDUST_YAMLXXX_3lgnrm_V2c.pkl')  # Save results here
+savePath = os.path.join(basePath, 'Working/MODAERO_retrievalPickles/TerraOcean_GLOBALandDUST_YAMLXXX_3lgnrm_V2c.pkl')  # Save results here
 pathYAML = os.path.join(basePath, 'Remote_Sensing_Analysis/GRASP_PythonUtils/settings_modis_3lgnrm_optimalOcean.yml') # YAML file to use
 #pathYAML = os.path.join(basePath, 'Remote_Sensing_Analysis/GRASP_PythonUtils/settings_modis_3lgnrm_optimalLand.yml') # YAML file to use
 dirGRASP = False
