@@ -33,21 +33,14 @@ retrieval:
         inversion_regime: multi_pixel   
 
     noises:
-        noise[1]: # very low weight to 0.470um data
-            standard_deviation_synthetic: 0.0
-            error_type:   relative
-            standard_deviation:  0.5
-            measurement_type[1]:
-                type: I
-                index_of_wavelength_involved: [1 ]
-        noise[2]:
+        noise[1]:
             standard_deviation_synthetic: 0.0
             error_type:   relative
             standard_deviation:  0.03
             measurement_type[1]:
                 type: I
-                index_of_wavelength_involved: [ 2, 3, 4, 5, 6, 7 ]
-#        noise[3]:
+                index_of_wavelength_involved: [1, 2, 3, 4, 5, 6, 7 ]
+#        noise[2]:
 #            standard_deviation_synthetic: 0.0
 #            error_type:   absolute
 #            standard_deviation:  0.005
