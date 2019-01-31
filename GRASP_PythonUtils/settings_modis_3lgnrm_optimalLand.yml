@@ -80,8 +80,8 @@ retrieval:
                 max: 15.0
  
     product_configuration:
-        wavelength_indices_for_angstrom: [4, 5]
-        wavelength_indices_for_ndvi: [4, 5]
+        wavelength_indices_for_angstrom: [2, 4]
+        wavelength_indices_for_ndvi: [3, 4]
 
     products:                   
         aerosol:
@@ -187,8 +187,6 @@ retrieval:
                     max:                          [2.000]
                     index_of_wavelength_involved: [0]
                 single_pixel:
-                    a_priori_estimates:
-                        lagrange_multiplier:      [1.0e-9]
                     smoothness_constraints:
                         difference_order: 0
                         lagrange_multiplier: 0.0
@@ -207,8 +205,6 @@ retrieval:
                     max:                          [2.00]
                     index_of_wavelength_involved: [0]
                 single_pixel:
-                    a_priori_estimates:
-                        lagrange_multiplier:      [1.0e-9]
                     smoothness_constraints:
                         difference_order: 0
                         lagrange_multiplier: 0.0
@@ -227,8 +223,6 @@ retrieval:
                     max:                          [2.00]
                     index_of_wavelength_involved: [0]
                 single_pixel:
-                    a_priori_estimates:
-                        lagrange_multiplier:      [1.0e-9]
                     smoothness_constraints:
                         difference_order: 0
                         lagrange_multiplier: 0.0
