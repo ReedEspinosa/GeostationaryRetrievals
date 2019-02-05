@@ -3,11 +3,11 @@
 import numpy as np
 import glob
 import warnings
+import hashlib
 import os
 import sys
-import hashlib
 from math import ceil
-sys.path.append(os.path.join("..", "GRASP_PythonUtils"))
+sys.path.append(os.path.join(os.path.realpath(__file__),"..","GRASP_PythonUtils"))
 from runGRASP import graspRun, pixel
 from miscFunctions import angstrmIntrp
 
