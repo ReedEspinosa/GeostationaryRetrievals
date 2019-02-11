@@ -361,7 +361,7 @@ retrieval:
                     value:                                               [0.0030,    0.0030, 0.0030,    0.0030,    0.0030,      0.0030,     0.0030,      0.007,     0.004 ]
                     min:                                                  [0.0002,    0.0002, 0.0002,    0.0002,    0.0002,       0.0002,   0.0002,   0.0005,  0.0003]
                     max:                                                 [0.008,      0.008,     0.008,      0.006,      0.004,      0.0035,      0.0035,      0.01,       0.005]
-                    index_of_wavelength_involved:   [1,              2,              3,                4,               5,                6,               7                 8,               9        ]
+                    index_of_wavelength_involved:   [1,              2,              3,                4,               5,                6,               7,                 8,               9        ]
                 single_pixel:
                     smoothness_constraints:
                         difference_order: 1
@@ -379,7 +379,7 @@ retrieval:
                     value:                                               [0.0005, 0.0005, 0.0005,    0.0005,    0.0005,    0.0005,    0.0005,   0.0005,    0.0005 ]
                     min:                                                  [0.00001, 0.00001, 0.00001,  0.00001,  0.00001,  0.00001,  0.00001,  0.00001,  0.00001]
                     max:                                                 [0.003, 0.003, 0.003,       0.001,       0.001,       0.001,      0.001,      0.001,       0.001 ]
-                    index_of_wavelength_involved:   [1,              2,              3,                4,               5,                6,               7                 8,               9        ]
+                    index_of_wavelength_involved:   [1,              2,              3,                4,               5,                6,               7,                 8,               9        ]
                 single_pixel:
                     smoothness_constraints:
                         difference_order: 1
@@ -397,7 +397,7 @@ retrieval:
                     value:                                               [0.00061, 0.00061, 0.00061, 0.00064, 0.00066, 0.00063, 0.00066, 0.00075, 0.00086]
                     min:                                                  [0.00044, 0.00044, 0.00044, 0.00044, 0.00044, 0.00043, 0.00046, 0.00051, 0.00057]
                     max:                                                 [0.00175, 0.00175, 0.00175, 0.00173, 0.00171,  0.00134, 0.00126, 0.00166, 0.00202]
-                    index_of_wavelength_involved:   [1,              2,              3,                4,               5,                6,               7                 8,               9        ]
+                    index_of_wavelength_involved:   [1,              2,              3,                4,               5,                6,               7,                 8,               9        ]
                 single_pixel:
                     smoothness_constraints:
                         difference_order: 1
@@ -416,9 +416,9 @@ retrieval:
             retrieved: false
             mode[1]:
                 initial_guess:                                        #1         #2       #3       #4       #5      #6       #7      #8       #9
-                    value:                                               [ 1.41,  1.41,  1.41,  1.41,  1.41,       1.41,      1.41,     1.41,   1.41,     1.4,     1.39    ] # Tight Range is key to good results
-                    min:                                                  [1.4,  1.4,  1.4,         1.4,       1.4,       1.4,     1.4,       1.38,   1.38    ]
-                    max:                                                 [1.42,  1.42,  1.42,      1.42,     1.42,     1.42,   1.42,     1.41,   1.40    ]
+                    value:                                               [ 1.41,  1.41,  1.41,   1.41,    1.41,     1.41,       1.41,     1.4,     1.39    ] # Tight Range is key to good results
+                    min:                                                  [1.4,     1.4,    1.4,    1.4,       1.4,        1.4,        1.4,       1.38,   1.38    ]
+                    max:                                                 [1.42,  1.42,  1.42,  1.42,     1.42,     1.42,      1.42,     1.41,   1.40    ]
                     index_of_wavelength_involved:   [1,           2,         3,         4,         5,         6,        7 ,    8,    9 ] 
                 single_pixel:
                     smoothness_constraints:

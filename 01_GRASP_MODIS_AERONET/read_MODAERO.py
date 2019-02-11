@@ -7,7 +7,8 @@ import hashlib
 import os
 import sys
 from math import ceil
-sys.path.append(os.path.join(os.path.realpath(__file__),"..","GRASP_PythonUtils"))
+#sys.path.append(os.path.join(os.path.realpath(__file__),"..","GRASP_PythonUtils"))
+sys.path.append(os.path.join("..", "GRASP_PythonUtils"))
 from runGRASP import graspRun, pixel
 from miscFunctions import angstrmIntrp
 
@@ -136,7 +137,7 @@ class modaeroDB(object):
         lndPrct = 100*np.int(self.surfType=='land')
         graspObjs = []
         measLwrBnd = 0.00001 # minimum allowed value for radiance and AOD
-        lambdaUsed = slice(0,7) # only use first 7 lambda for now, must be in ascending order
+        lambdaUsed = np.r_[7,8,0,1,2,3,4,5,6] if self.surfType=='land' else np.r_[0:7] # HINT must be in order of ascending wavelength
         for seg in self.siteSegment:
             gObj = graspRun(pathYAML, orbHghtKM, dirGRASP)
             gObj.AUX_dict = []
@@ -147,8 +148,9 @@ class modaeroDB(object):
                 MODlon = np.mean(seg.mod_loc[nowInd, 3])
                 MODlat = np.mean(seg.mod_loc[nowInd, 2])
                 nowPix = pixel(unqDT, 1, 1, MODlon, MODlat, seg.aero_loc[1], lndPrct)
-                aodAERO = np.zeros(lambdaUsed.stop)
-                for i,wl in enumerate(seg.MOD_LAMDA[lambdaUsed]): 
+                Nwave = lambdaUsed.shape[0]
+                aodAERO = np.zeros(Nwave)
+                for i,l,wl in zip(range(Nwave), lambdaUsed, seg.MOD_LAMDA[lambdaUsed]):
                     aodAERO[i] = angstrmIntrp(seg.AERO_LAMDA, seg.aod[nowInd[0],:], wl)
                     aodAEROinpt = aodAERO[i] if incldAERO else np.nan
                     msTyp = np.r_[41] if np.isnan(aodAEROinpt) else np.r_[41, 12] # normalized radiances, AOD
@@ -158,7 +160,7 @@ class modaeroDB(object):
                     dummyAng = [] if np.isnan(aodAEROinpt) else 0
                     thtv = np.r_[np.mean(seg.geom[nowInd, 2]), dummyAng]
                     phi = np.r_[np.mean(seg.geom[nowInd, 1] - seg.geom[nowInd, 3]), dummyAng]
-                    radiance = max(np.mean(seg.rflct[nowInd,i])*mu, measLwrBnd) # MODIS R=L/FO*pi/mu0; GRASP R=L/FO*pi w/ R>1e-6                      
+                    radiance = max(np.mean(seg.rflct[nowInd,l])*mu, measLwrBnd) # MODIS R=L/FO*pi/mu0; GRASP R=L/FO*pi w/ R>1e-6                      
                     aodAEROinpt =  [] if np.isnan(aodAEROinpt) else max(aodAEROinpt, measLwrBnd)
                     nowPix.addMeas(wl, msTyp, np.repeat(1, nip), sza, thtv, phi, np.r_[radiance, aodAEROinpt])
                 gObj.addPix(nowPix)
