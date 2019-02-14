@@ -256,9 +256,9 @@ retrieval:
                         lagrange_multiplier_of_T_variability: 5.0e3
             mode[2]: 
                 initial_guess: 
-                    value:                        [0.16,   0.62]
-                    min:                           [0.13,    0.57]
-                    max:                          [0.19,    0.67]
+                    value:                        [0.16,     0.62]
+                    min:                           [0.1,       0.57]
+                    max:                          [0.22,    0.7]
                     index_of_wavelength_involved: [0,     0]
                 single_pixel:
                     a_priori_estimates:
@@ -273,7 +273,7 @@ retrieval:
                         derivative_order_of_Y_variability:    1
                         lagrange_multiplier_of_Y_variability: 1.0e-1                     
                         derivative_order_of_T_variability:    1
-                        lagrange_multiplier_of_T_variability: 5.0e3
+                        lagrange_multiplier_of_T_variability: 1.0e3
             mode[3]: 
                 initial_guess: 
                     value:                        [3.15,  0.63]
@@ -436,7 +436,7 @@ retrieval:
                 initial_guess:                                       #1         #2       #3       #4       #5      #6       #7      #8       #9
                     value:                                               [1.52,    1.518,    1.518,   1.515,   1.512,   1.525,   1.52,   1.52,  1.52]
                     min:                                                  [1.505,  1.505,   1.505,   1.495,   1.492, 1.508,    1.515, 1.508, 1.508]
-                    max:                                                 [1.53,    1.53,      1.53,    1.53,       1.53,   1.535,    1.53,   1.53,   1.53]
+                    max:                                                 [1.55,    1.55,      1.55,    1.55,       1.55,   1.55,    1.55,   1.55,   1.55]
                     index_of_wavelength_involved:   [1,          2,         3,         4,         5,         6,        7,      8,       9  ] 
                 single_pixel:
                     smoothness_constraints:
