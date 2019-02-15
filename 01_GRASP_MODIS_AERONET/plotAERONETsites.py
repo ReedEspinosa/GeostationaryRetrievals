@@ -17,21 +17,22 @@ binPathGRASP = '/usr/local/bin/grasp'
 #siteID = [987, 352, 119, 392, 769, 793, 1031, 187, 962, 469, 471, 470, 543, 461, 467, 906, 1108, 1109, 1114, 507, 256] # DUST SITES
 #siteID = [9]
 #siteID = np.unique(DB.aero_loc[:,0][DB.aero_loc[:,1]<40]) # find sites below 40m, only used after 1st run
-siteID = False
+siteID = np.r_[9, 161, 649, 1126, 1149, 518, 510, 268, 196, 514, 59, 1, 430, 221, 1150, 1197, 946, 33, 1077, 1107, 337, 806, 1102, 176, 339, 989, 658, 532, 1156, 746, 961, 981, 748, 316, 666, 485, 940, 922, 285, 126] # LAND SITES
+# SEE "HINT" BELOW TO PLOT ALL SITES
 
 npzPath = os.path.join(basePath, 'Remote_Sensing_Projects/GRASP_MODIS/Land_MOD04_L2_C61_V2c.out.npz')
 
 DB = modaeroDB(npzPath, 'land')
 #DB.groupData(siteID)
 
-if not siteID: siteID = np.unique(DB.aero_loc[:,0])
+#siteID = np.unique(DB.aero_loc[:,0]) # HINT plot all sites
 siteInd = [np.nonzero(DB.aero_loc[:,0]==ID)[0][0] for ID in siteID]
 elev = DB.aero_loc[siteInd,1]
 lat = DB.aero_loc[siteInd,2]
 lon = DB.aero_loc[siteInd,3]
 
 plt.figure(figsize=(12, 6))
-m = Basemap(projection='robin', resolution='c', lat_0=0, lon_0=0)
+m = Basemap(projection='robin', resolution='h', lat_0=0, lon_0=0)
 m.bluemarble(scale=1);
 #m.shadedrelief(scale=0.2)
 x, y = m(lon, lat)

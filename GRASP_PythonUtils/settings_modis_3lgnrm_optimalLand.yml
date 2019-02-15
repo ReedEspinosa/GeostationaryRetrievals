@@ -39,14 +39,14 @@ retrieval:
             standard_deviation:  0.03
             measurement_type[1]:
                 type: I
-                index_of_wavelength_involved: [1, 2, 3, 4, 5]
+                index_of_wavelength_involved: [1, 2, 3, 4, 5,7]
         noise[2]: 
             standard_deviation_synthetic: 0.0
             error_type:   relative
             standard_deviation:  0.5
             measurement_type[1]:
                 type: I
-                index_of_wavelength_involved: [ 6, 7 ]                
+                index_of_wavelength_involved: [ 5,6 ]                
 #        noise[3]:
 #            standard_deviation_synthetic: 0.0
 #            error_type:   absolute

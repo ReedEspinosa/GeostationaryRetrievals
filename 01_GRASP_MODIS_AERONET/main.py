@@ -26,7 +26,7 @@ from runGRASP import graspDB
 # Uranus
 basePath = '/home/respinosa/ReedWorking/'
 binPathGRASP = '/home/respinosa/ReedWorking/Local_Code_MacBook/grasp_open/build/bin/grasp'
-maxCPUs = 24 # max simaltanous instances of GRASP
+maxCPUs = 22 # max simaltanous instances of GRASP
 
 #siteID 9=Wallops, 210=Nauru, 106=Ascension Island, 919=Fukue(Japan), 58=Cape Verde, Honolulu=97, Amr. Somoa=1185, Midway=278, Stennis=NOLA
 #siteID_global = [210, 9, 106, 919, 58, 97, 1185, 278, 243, 908, 809, 210, 103, 1101, 739, 383, 916, 475, 436, 667] # globaly representative samplw
@@ -34,11 +34,12 @@ maxCPUs = 24 # max simaltanous instances of GRASP
 #siteID = np.unique(np.r_[siteID_global, siteID_dust])
 #siteID = np.r_[9, 161, 649, 1126, 1149, 518, 510, 268, 196, 514, 59, 1, 430, 221, 1150, 1197, 946, 33, 1077, 1107, 337, 806, 1102, 176, 339, 989, 658, 532, 1156, 746, 961, 981, 748, 316, 666, 485, 940, 922, 285, 126] # LAND SITES
 #siteID = siteID[0::4]
+#siteID = np.r_[9]
 siteID = np.r_[9,518,77,1,285,514,946,961]
 
 orbHght = 713 # km
 saveNPZ = False
-incldAERO = False # Include AERONET AOD as input to retrieval
+incldAERO = True # Include AERONET AOD as input to retrieval
 
 #npzPath = os.path.join(basePath, 'Remote_Sensing_Projects/GRASP_MODIS/Land_MYD04_L2_C61_V2c.out.npz') # Use AQUA land Data
 #dirPath = os.path.join(basePath, 'Remote_Sensing_Projects/GRASP_MODIS/landV2/MYD*.outv2') 
@@ -50,7 +51,7 @@ dirPath = os.path.join(basePath, 'Remote_Sensing_Projects/GRASP_MODIS/landV2/MOD
 #dirPath = os.path.join(basePath, 'Remote_Sensing_Projects/GRASP_MODIS/oceanV2/MOD*.out') 
 fileType = 'land' # 'land' or 'ocean'
 
-savePath = os.path.join(basePath, 'Working/MODAERO_retrievalPickles/TerraLand_FullLandSites_YAML6ee6a0a_maxBlue_3lgnrm_Nt300_V2c.pkl')  # Save results here
+savePath = os.path.join(basePath, 'Working/MODAERO_retrievalPickles/TerraLand_Select8Sites_YAMLb4a787f_maxBlue_3lgnrm_Nt300_AEROfrcd_V2c.pkl')  # Save results here
 #pathYAML = os.path.join(basePath, 'Remote_Sensing_Analysis/GRASP_PythonUtils/settings_modis_2lgnrm_optimalOcean.yml') # YAML file to use
 pathYAML = os.path.join(basePath, 'Remote_Sensing_Analysis/GRASP_PythonUtils/settings_modis_3lgnrm_optimalLand_maxBlue.yml') # YAML file to use
 #pathYAML = os.path.join(basePath, 'Local_Code_MacBook/grasp_open/examples/polder/settings_example_polder_inversion.yml') # YAML file to use
@@ -63,7 +64,6 @@ maxNtPerSeg=300 # how many pixels per grasp run? (DICOVER Test use 4 -> 45 grasp
 if dirGRASP and maxCPUs > 1: # need seperate directories to run parallel
     warnings.warn('System temp directories must be used in parallel mode. Ignoring dirGRASP setting...')
     dirGRASP = False
-
 
 DB = modaeroDB(None, fileType, maxNtPerSeg) if saveNPZ else modaeroDB(npzPath, fileType, maxNtPerSeg)
 
