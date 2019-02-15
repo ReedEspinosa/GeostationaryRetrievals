@@ -190,7 +190,7 @@ retrieval:
                         lagrange_multiplier_of_X_variability: 1.0e-3                        
                         derivative_order_of_Y_variability:    0
                         lagrange_multiplier_of_Y_variability: 1.0e-3
-                        derivative_order_of_T_variability:    1
+                        derivative_order_of_T_variability:    0
                         lagrange_multiplier_of_T_variability: 5.0e3                        
 
             mode[2]:
