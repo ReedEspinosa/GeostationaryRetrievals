@@ -228,8 +228,8 @@ retrieval:
                         lagrange_multiplier_of_X_variability: 1.0e-3                        
                         derivative_order_of_Y_variability:    0
                         lagrange_multiplier_of_Y_variability: 1.0e-3
-                        derivative_order_of_T_variability:    0
-                        lagrange_multiplier_of_T_variability: 1.0e4           
+                        derivative_order_of_T_variability:    1
+                        lagrange_multiplier_of_T_variability: 1.0e3           
                                
         characteristic[3]: 
             type: size_distribution_lognormal
