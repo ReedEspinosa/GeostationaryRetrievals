@@ -190,8 +190,8 @@ retrieval:
                         lagrange_multiplier_of_X_variability: 1.0e-3                        
                         derivative_order_of_Y_variability:    0
                         lagrange_multiplier_of_Y_variability: 1.0e-3
-                        derivative_order_of_T_variability:    0
-                        lagrange_multiplier_of_T_variability: 5.0e3                        
+                        derivative_order_of_T_variability:    1
+                        lagrange_multiplier_of_T_variability: 1.0e0                        
 
             mode[2]:
                 initial_guess:                  #1         #2       #3       #4       #5      #6       #7      #8       #9
@@ -229,7 +229,7 @@ retrieval:
                         derivative_order_of_Y_variability:    0
                         lagrange_multiplier_of_Y_variability: 1.0e-3
                         derivative_order_of_T_variability:    1
-                        lagrange_multiplier_of_T_variability: 1.0e5           
+                        lagrange_multiplier_of_T_variability: 1.0e4          
                                
         characteristic[3]: 
             type: size_distribution_lognormal
