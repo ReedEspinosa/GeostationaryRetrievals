@@ -257,8 +257,8 @@ retrieval:
             mode[2]: 
                 initial_guess: 
                     value:                        [0.16,     0.62]
-                    min:                           [0.1,       0.57]
-                    max:                          [0.22,    0.7]
+                    min:                           [0.1,       0.4]
+                    max:                          [0.4,      0.7]
                     index_of_wavelength_involved: [0,     0]
                 single_pixel:
                     a_priori_estimates:
@@ -273,7 +273,7 @@ retrieval:
                         derivative_order_of_Y_variability:    1
                         lagrange_multiplier_of_Y_variability: 1.0e-1                     
                         derivative_order_of_T_variability:    1
-                        lagrange_multiplier_of_T_variability: 1.0e0
+                        lagrange_multiplier_of_T_variability: 5.0e0
             mode[3]: 
                 initial_guess: 
                     value:                        [3.15,  0.63]
@@ -315,7 +315,7 @@ retrieval:
                         derivative_order_of_Y_variability:    1
                         lagrange_multiplier_of_Y_variability: 1.0e-1                     
                         derivative_order_of_T_variability:    1
-                        lagrange_multiplier_of_T_variability: 5.0e0
+                        lagrange_multiplier_of_T_variability: 5.0e1
             mode[2]:
                 initial_guess:                      #1      
                     value:                          [0.95  ]
@@ -333,7 +333,7 @@ retrieval:
                         derivative_order_of_Y_variability:    1
                         lagrange_multiplier_of_Y_variability: 1.0e-1                     
                         derivative_order_of_T_variability:    1
-                        lagrange_multiplier_of_T_variability: 5.0e0
+                        lagrange_multiplier_of_T_variability: 5.0e1
             mode[3]:
                 initial_guess:                      #1      
                     value:                          [0.05   ]
@@ -351,7 +351,7 @@ retrieval:
                         derivative_order_of_Y_variability:    1
                         lagrange_multiplier_of_Y_variability: 1.0e-1                     
                         derivative_order_of_T_variability:    1
-                        lagrange_multiplier_of_T_variability: 5.0e0
+                        lagrange_multiplier_of_T_variability: 5.0e1
 
         characteristic[5]: 
             type: imaginary_part_of_refractive_index_spectral_dependent
@@ -373,7 +373,7 @@ retrieval:
                         derivative_order_of_Y_variability:    1
                         lagrange_multiplier_of_Y_variability: 1.0e-1                     
                         derivative_order_of_T_variability:    1
-                        lagrange_multiplier_of_T_variability: 5.0e0
+                        lagrange_multiplier_of_T_variability: 5.0e1
             mode[2]:
                 initial_guess:                                      # 0.41          0.44        0.469,     0.555       0.645    0.8585,     1.24,        1.64,       2.13
                     value:                                               [0.009,    0.008,     0.0075,     0.0065,     0.005,    0.0045,    0.004,   0.004,    0.004 ]
@@ -391,7 +391,7 @@ retrieval:
                         derivative_order_of_Y_variability:    1
                         lagrange_multiplier_of_Y_variability: 1.0e-1                     
                         derivative_order_of_T_variability:    1
-                        lagrange_multiplier_of_T_variability: 5.0e0
+                        lagrange_multiplier_of_T_variability: 5.0e1
             mode[3]:
                 initial_guess:                                          #1         #2       #3       #4       #5      #6       #7      #8       #9
                     value:                                               [0.00061, 0.00061, 0.00061, 0.00064, 0.00066, 0.00063, 0.00066, 0.00075, 0.00086]
@@ -409,7 +409,7 @@ retrieval:
                         derivative_order_of_Y_variability:    1
                         lagrange_multiplier_of_Y_variability: 1.0e-1                     
                         derivative_order_of_T_variability:    1
-                        lagrange_multiplier_of_T_variability: 5.0e0
+                        lagrange_multiplier_of_T_variability: 5.0e1
                       
         characteristic[6]:
             type: real_part_of_refractive_index_spectral_dependent
@@ -431,12 +431,12 @@ retrieval:
                         derivative_order_of_Y_variability:    1
                         lagrange_multiplier_of_Y_variability: 1.0e-1                     
                         derivative_order_of_T_variability:    1
-                        lagrange_multiplier_of_T_variability: 5.0e0                                              
+                        lagrange_multiplier_of_T_variability: 5.0e1                                              
             mode[2]:
                 initial_guess:                                       #1         #2       #3       #4       #5      #6       #7      #8       #9
                     value:                                               [1.452,    1.4518,    1.4518,   1.4515,   1.4512,   1.4525,   1.452,   1.452,  1.452]
-                    min:                                                  [1.405,  1.405,   1.405,   1.405,   1.405, 1.405,    1.415, 1.45, 1.45]
-                    max:                                                 [1.55,    1.55,      1.55,    1.55,       1.55,   1.55,    1.55,   1.55,   1.55]
+                    min:                                                  [1.40,     1.40,     1.40,     1.40,     1.40,    1.40,     1.41,   1.415,    1.415]
+                    max:                                                 [1.55,    1.55,      1.55,    1.55,       1.55,   1.55,    1.55,   1.55,      1.55]
                     index_of_wavelength_involved:   [1,          2,         3,         4,         5,         6,        7,      8,       9  ] 
                 single_pixel:
                     smoothness_constraints:
@@ -449,7 +449,7 @@ retrieval:
                         derivative_order_of_Y_variability:    1
                         lagrange_multiplier_of_Y_variability: 1.0e-1                     
                         derivative_order_of_T_variability:    1
-                        lagrange_multiplier_of_T_variability: 5.0e0                                              
+                        lagrange_multiplier_of_T_variability: 5.0e1                                              
             mode[3]:
                 initial_guess:                                        #1         #2        #3        #4        #5        #6       #7
                     value:                                               [1.500, 1.500, 1.500, 1.500, 1.500, 1.500, 1.500, 1.491, 1.485]
@@ -467,7 +467,7 @@ retrieval:
                         derivative_order_of_Y_variability:    1
                         lagrange_multiplier_of_Y_variability: 1.0e-1                     
                         derivative_order_of_T_variability:    1
-                        lagrange_multiplier_of_T_variability: 5.0e0               
+                        lagrange_multiplier_of_T_variability: 5.0e1               
                                
         characteristic[7]: 
             type: vertical_profile_parameter_height
