@@ -1,0 +1,438 @@
+# Settings for MODIS retrieval, adapted from POLDER example
+# Authors: Pavel Litvinov, Xin Huang, Anton Lopatin, Reed Espinosa
+
+input:
+    driver: sdata
+    file: modaero.sdat
+
+output:
+    segment:
+        function: classic
+        stream: modaero.txt
+        
+retrieval:
+    general:
+        path_to_internal_files: "/usr/local/share/grasp/kernels/"
+#        path_to_internal_files: "/opt/grasp-0.8/share/grasp/kernels/"
+
+    convergence:
+        stop_before_performing_retrieval: false
+        minimization_convention: logarithm
+        maximum_iterations_of_Levenberg-Marquardt: 20
+        maximum_iterations_for_stopping: 25
+        threshold_for_stopping: 1.0e-4
+        threshold_for_stopping_Q_iterations: 1.0e-12
+        scale_for_finite_difference: 1.0e-3
+        shift_for_applying_logarithm_to_negative_values: 1.1
+        normal_system_solver: sparse_matrix_solver
+                
+    regime_of_measurement_fitting:
+        radiance: radiances 
+            
+    regime_of_multipixel_constraints: 
+        inversion_regime: multi_pixel   
+
+    noises:
+        noise[1]: # Should we add wavelength dependent noise?
+            standard_deviation_synthetic: 0.0
+            error_type:   relative
+            standard_deviation:  0.03
+            measurement_type[1]:
+                type: I
+                index_of_wavelength_involved: [1, 2, 3, 4, 5, 6, 7, 8, 9]             
+        noise[2]:
+            standard_deviation_synthetic: 0.0
+            error_type:   absolute
+            standard_deviation:  0.01
+            measurement_type[1]:
+                type: AOD
+                index_of_wavelength_involved: [1,  2, 3, 4, 5, 6, 7, 8, 9]
+
+    radiative_transfer:
+        number_of_layers: 50 # 50->5 ~5% AOD change, 15% speed up
+        aerosol_profile_vertical_type:    exponential
+        absolute_error_rt_calculations: 0.0005
+        reference_plane_for_polarization:   meridian
+        simulating_observation:
+            order_of_scattering: multiple_scattering
+            number_of_gaussian_quadratures_for_expansion_coefficients:  15
+            number_of_guassian_quadratures_for_fourier_expansion_coefficients:  5
+            number_of_fourier_expansion_coefficients:  4
+        simulating_derivatives:
+            order_of_scattering: derivatives
+            number_of_gaussian_quadratures_for_expansion_coefficients:  15
+            number_of_guassian_quadratures_for_fourier_expansion_coefficients:   4
+            number_of_fourier_expansion_coefficients:   4
+
+    phase_matrix:
+        size_binning_method_for_triangle_bins: logarithm
+        number_of_elements: 1 # 1 & 2 (same) vs 4: shortwave delta AOD ~10%, ~0.01 increase in R, no RMSE change (n=3000),  ~2X speed up
+        kernels_folder: "KERNELS_BASE/"
+        radius:
+            mode[1]:
+                min: 0.05
+                max: 15.0
+            mode[2]:
+                min: 0.05
+                max: 15.0
+ 
+    product_configuration:
+        wavelength_indices_for_angstrom: [4, 6]
+        wavelength_indices_for_ndvi: [5, 6]
+
+    products:                   
+        aerosol:
+            chemistry: false
+            lidar: false                            
+            optical_properties: true                
+            phase_matrix: false                      
+            refractive_index: true                 
+            theoretical_bimodal_extinction: false    
+            theoretical_bimodal_parameters: true  
+            particulate_matter: false
+            type: false
+        error_estimation:
+            aerosol:
+                lidar: false            
+                optical_properties: false
+            parameters: false               
+        forcing:
+            broadband_flux: false                    
+            forcing: false                           
+        retrieval:
+            fitting: true                       
+            parameters: true                      
+            residual: true                        
+        surface: true                                   
+
+    debug:
+        additional_information: false
+        verbose: true
+
+    constraints:                                                
+        characteristic[1]: 
+            type: aerosol_concentration
+            retrieved: true
+            mode[1]: 
+                initial_guess: 
+                    value:                        [0.005]
+                    min:                          [0.0002]
+                    max:                          [2.000]
+                    index_of_wavelength_involved: [0]
+                single_pixel:
+                    smoothness_constraints:
+                        difference_order: 0
+                        lagrange_multiplier: 0.0
+                multi_pixel:
+                    smoothness_constraints:
+                        derivative_order_of_X_variability:    1
+                        lagrange_multiplier_of_X_variability: 1.0e-1                        
+                        derivative_order_of_Y_variability:    1
+                        lagrange_multiplier_of_Y_variability: 1.0e-1                     
+                        derivative_order_of_T_variability:    1
+                        lagrange_multiplier_of_T_variability: 0
+            mode[2]: 
+                initial_guess: 
+                    value:                        [0.001]
+                    min:                          [0.00005]
+                    max:                          [2.00]
+                    index_of_wavelength_involved: [0]
+                single_pixel:
+                    smoothness_constraints:
+                        difference_order: 0
+                        lagrange_multiplier: 0.0
+                multi_pixel:
+                    smoothness_constraints:
+                        derivative_order_of_X_variability:    1
+                        lagrange_multiplier_of_X_variability: 1.0e-1                        
+                        derivative_order_of_Y_variability:    1
+                        lagrange_multiplier_of_Y_variability: 1.0e-1                     
+                        derivative_order_of_T_variability:    1
+                        lagrange_multiplier_of_T_variability: 0
+                                            
+        characteristic[2]:
+            type: surface_land_brdf_ross_li
+            retrieved: true
+            mode[1]:    
+                initial_guess:                                       # 0.41          0.44        0.469,     0.555       0.645       0.8585,     1.24,           1.64,          2.13
+                    value:                                               [0.04030, 0.05030,  0.06030,  0.08233,    0.07,         0.34,       0.3,          0.25504,   0.13611]     
+                    min:                                                  [0.003,       0.003,       0.003,    0.03082,   0.02040,   0.19599,   0.1,          0.11700,   0.03649]
+                    max:                                                 [0.1,            0.15,          0.13,      0.15,         0.18,           0.55,        0.54,        0.39,         0.25509]                                                                                
+                    index_of_wavelength_involved:   [1,         2,        3,        4,         5,        6,       7,      8,      9    ]
+                single_pixel:
+                    smoothness_constraints:
+                        difference_order: 1
+                        lagrange_multiplier: 0
+                multi_pixel:
+                    smoothness_constraints:
+                        derivative_order_of_X_variability:    0
+                        lagrange_multiplier_of_X_variability: 1.0e-3                        
+                        derivative_order_of_Y_variability:    0
+                        lagrange_multiplier_of_Y_variability: 1.0e-3
+                        derivative_order_of_T_variability:    1
+                        lagrange_multiplier_of_T_variability: 1.0e1                        
+
+            mode[2]:
+                initial_guess:                  #1         #2       #3       #4       #5      #6       #7      #8       #9
+                    value:                          [0.2,      0.2,   0.2,   0.2,   0.2,   0.2,   0.2,   0.2,   0.2  ]    
+                    min:                             [0.04,     0.04,  0.04,     0.04,     0.04,     0.04,    0.04,     0.04,    0.04  ]
+                    max:                            [1.50,   1.50, 1.50,   1.50,   1.50,   1.50,   1.50,   1.50,   1.50   ]
+                    index_of_wavelength_involved:   [1,     2,     3,     4,     5,     6,     7,    8,    9  ]
+                single_pixel:
+                    smoothness_constraints:
+                        difference_order: 1
+                        lagrange_multiplier: 10.0e-0
+                multi_pixel:
+                    smoothness_constraints:
+                        derivative_order_of_X_variability:    0
+                        lagrange_multiplier_of_X_variability: 1.0e-3                        
+                        derivative_order_of_Y_variability:    0
+                        lagrange_multiplier_of_Y_variability: 1.0e-3
+                        derivative_order_of_T_variability:    1
+                        lagrange_multiplier_of_T_variability: 5.0e0
+
+            mode[3]:
+                initial_guess:                  #1         #2       #3       #4       #5      #6       #7      #8       #9
+                    value:                          [0.155,   0.155, 0.155,   0.155,   0.155,   0.155,   0.155,   0.155,   0.155   ]
+                    min:                             [0.04,     0.04,  0.04,     0.04,     0.04,     0.04,    0.04,     0.04,    0.04  ]
+                    max:                            [0.40,      0.40, 0.40,     0.40,      0.40,   0.40,     0.40,    0.40,   0.40   ]
+                    index_of_wavelength_involved:   [1,     2,     3,     4,     5,     6 ,     7,    8,     9   ]
+                single_pixel:
+                    smoothness_constraints:
+                        difference_order: 1
+                        lagrange_multiplier: 1.0e1
+                multi_pixel:
+                    smoothness_constraints:
+                        derivative_order_of_X_variability:    0
+                        lagrange_multiplier_of_X_variability: 1.0e-3                        
+                        derivative_order_of_Y_variability:    0
+                        lagrange_multiplier_of_Y_variability: 1.0e-3
+                        derivative_order_of_T_variability:    1
+                        lagrange_multiplier_of_T_variability: 1.0e1          
+                               
+        characteristic[3]: 
+            type: size_distribution_lognormal
+            retrieved: true
+            mode[1]: 
+                initial_guess: 
+                    value:                        [0.14,       0.51]
+                    min:                           [0.08,      0.4]
+                    max:                          [0.25,      0.76]
+                    index_of_wavelength_involved: [0,     0]
+                single_pixel:
+                    a_priori_estimates:
+                        lagrange_multiplier:      [0,  0]
+                    smoothness_constraints:
+                        difference_order: 0
+                        lagrange_multiplier: 0.0
+                multi_pixel:
+                    smoothness_constraints:
+                        derivative_order_of_X_variability:    1
+                        lagrange_multiplier_of_X_variability: 1.0e-1                        
+                        derivative_order_of_Y_variability:    1
+                        lagrange_multiplier_of_Y_variability: 1.0e-1                     
+                        derivative_order_of_T_variability:    1
+                        lagrange_multiplier_of_T_variability: 1.0e0
+            mode[2]: 
+                initial_guess: 
+                    value:                        [3.15,  0.63]
+                    min:                           [2.5,    0.56] 
+                    max:                          [4.0,   0.82]
+                    index_of_wavelength_involved: [0,     0]
+                single_pixel:
+                    a_priori_estimates:
+                        lagrange_multiplier:      [0,  0]
+                    smoothness_constraints:
+                        difference_order: 0
+                        lagrange_multiplier: 0.0
+                multi_pixel:
+                    smoothness_constraints:
+                        derivative_order_of_X_variability:    1
+                        lagrange_multiplier_of_X_variability: 1.0e-1                        
+                        derivative_order_of_Y_variability:    1
+                        lagrange_multiplier_of_Y_variability: 1.0e-1                     
+                        derivative_order_of_T_variability:    1
+                        lagrange_multiplier_of_T_variability: 1.0e0
+                               
+        characteristic[4]: 
+            type: sphere_fraction
+            retrieved: true
+            mode[1]:
+                initial_guess:                      #1      
+                    value:                          [0.95  ]
+                    min:                            [0.9 ]
+                    max:                            [0.99999]
+                    index_of_wavelength_involved:   [0     ]
+                single_pixel:
+                    smoothness_constraints:
+                        difference_order: 0
+                        lagrange_multiplier: 0.0
+                multi_pixel:
+                    smoothness_constraints:
+                        derivative_order_of_X_variability:    1
+                        lagrange_multiplier_of_X_variability: 1.0e-1                        
+                        derivative_order_of_Y_variability:    1
+                        lagrange_multiplier_of_Y_variability: 1.0e-1                     
+                        derivative_order_of_T_variability:    1
+                        lagrange_multiplier_of_T_variability: 1.0e0
+            mode[2]:
+                initial_guess:                      #1      
+                    value:                          [0.05   ]
+                    min:                            [0.0001 ]
+                    max:                            [0.4]
+                    index_of_wavelength_involved:   [0     ]
+                single_pixel:
+                    smoothness_constraints:
+                        difference_order: 0
+                        lagrange_multiplier: 0.0
+                multi_pixel:
+                    smoothness_constraints:
+                        derivative_order_of_X_variability:    1
+                        lagrange_multiplier_of_X_variability: 1.0e-1                        
+                        derivative_order_of_Y_variability:    1
+                        lagrange_multiplier_of_Y_variability: 1.0e-1                     
+                        derivative_order_of_T_variability:    1
+                        lagrange_multiplier_of_T_variability: 1.0e0
+
+        characteristic[5]: 
+            type: imaginary_part_of_refractive_index_spectral_dependent
+            retrieved: true
+            mode[1]:
+                initial_guess:                                          #1         #2       #3       #4       #5      #6       #7      #8       #9
+                    value:                                               [0.0030,    0.0030, 0.0030,    0.0030,    0.0030,      0.0030,     0.0030,      0.007,     0.004 ]
+                    min:                                                  [0.0002,    0.0002, 0.0002,    0.0002,    0.0002,       0.0002,   0.0002,   0.0005,  0.0003]
+                    max:                                                 [0.018,    0.016,       0.015,      0.013,        0.01 ,       0.009,     0.008,    0.008,   0.008 ]
+                    index_of_wavelength_involved:   [1,              2,              3,                4,               5,                6,               7,                 8,               9        ]
+                single_pixel:
+                    smoothness_constraints:
+                        difference_order: 1
+                        lagrange_multiplier: 1.0e-3
+                multi_pixel:
+                    smoothness_constraints:
+                        derivative_order_of_X_variability:    1
+                        lagrange_multiplier_of_X_variability: 1.0e-1                        
+                        derivative_order_of_Y_variability:    1
+                        lagrange_multiplier_of_Y_variability: 1.0e-1                     
+                        derivative_order_of_T_variability:    1
+                        lagrange_multiplier_of_T_variability: 1.0e0
+            mode[2]:
+                initial_guess:                                          #1         #2       #3       #4       #5      #6       #7      #8       #9
+                    value:                                               [0.00061, 0.00061, 0.00061, 0.00064, 0.00066, 0.00063, 0.00066, 0.00075, 0.00086]
+                    min:                                                  [0.00044, 0.00044, 0.00044, 0.00044, 0.00044, 0.00043, 0.00046, 0.00051, 0.00057]
+                    max:                                                 [0.00175, 0.00175, 0.00175, 0.00173, 0.00171,  0.00134, 0.00126, 0.00166, 0.00202]
+                    index_of_wavelength_involved:   [1,              2,              3,                4,               5,                6,               7,                 8,               9        ]
+                single_pixel:
+                    smoothness_constraints:
+                        difference_order: 1
+                        lagrange_multiplier: 1.0e-3
+                multi_pixel:
+                    smoothness_constraints:
+                        derivative_order_of_X_variability:    1
+                        lagrange_multiplier_of_X_variability: 1.0e-1                        
+                        derivative_order_of_Y_variability:    1
+                        lagrange_multiplier_of_Y_variability: 1.0e-1                     
+                        derivative_order_of_T_variability:    1
+                        lagrange_multiplier_of_T_variability: 1.0e0
+                      
+        characteristic[6]:
+            type: real_part_of_refractive_index_spectral_dependent
+            retrieved: true
+            mode[1]:
+                initial_guess:                                        #1         #2       #3       #4       #5      #6       #7      #8       #9
+                    value:                                               [ 1.41,  1.41,  1.41,   1.41,    1.41,     1.41,       1.41,     1.4,     1.39    ] # Tight Range is key to good results
+                    min:                                                  [1.35,     1.35,    1.35,    1.35,       1.35,        1.35,        1.35,       1.34,   1.34    ]
+                    max:                                                 [1.55,    1.55,      1.55,    1.55,       1.55,   1.55,    1.55,   1.55,      1.55]
+                    index_of_wavelength_involved:   [1,           2,         3,         4,         5,         6,        7 ,    8,    9 ] 
+                single_pixel:
+                    smoothness_constraints:
+                        difference_order: 1
+                        lagrange_multiplier: 1.0e-1
+                multi_pixel:
+                    smoothness_constraints:
+                        derivative_order_of_X_variability:    1
+                        lagrange_multiplier_of_X_variability: 1.0e-1                        
+                        derivative_order_of_Y_variability:    1
+                        lagrange_multiplier_of_Y_variability: 1.0e-1                     
+                        derivative_order_of_T_variability:    1
+                        lagrange_multiplier_of_T_variability: 1.0e0                                          
+            mode[2]:
+                initial_guess:                                        #1         #2        #3        #4        #5        #6       #7
+                    value:                                               [1.500, 1.500, 1.500, 1.500, 1.500, 1.500, 1.500, 1.491, 1.485]
+                    min:                                                  [1.489,  1.489,  1.489, 1.482, 1.482, 1.478, 1.478, 1.458, 1.452]
+                    max:                                                 [1.511, 1.511, 1.511, 1.523, 1.528, 1.541, 1.531, 1.513, 1.507]
+                    index_of_wavelength_involved:   [1,          2,         3,         4,         5,         6,        7,     8,     9  ] 
+                single_pixel:
+                    smoothness_constraints:
+                        difference_order: 1
+                        lagrange_multiplier: 1.0e-1
+                multi_pixel:
+                    smoothness_constraints:
+                        derivative_order_of_X_variability:    1
+                        lagrange_multiplier_of_X_variability: 1.0e-1                        
+                        derivative_order_of_Y_variability:    1
+                        lagrange_multiplier_of_Y_variability: 1.0e-1                     
+                        derivative_order_of_T_variability:    1
+                        lagrange_multiplier_of_T_variability: 1.0e0            
+                               
+        characteristic[7]: 
+            type: vertical_profile_parameter_height
+            retrieved: false
+            mode[1]:
+                initial_guess:                      #1          
+                    value:                          [500.0 ]
+                    min:                            [10.0   ] 
+                    max:                            [5000.0 ]
+                    index_of_wavelength_involved:   [0      ]
+                single_pixel:
+                    smoothness_constraints:
+                        difference_order: 0
+                        lagrange_multiplier: 0
+                multi_pixel:
+                    smoothness_constraints:
+                        derivative_order_of_X_variability:    1
+                        lagrange_multiplier_of_X_variability: 1.0e-1                        
+                        derivative_order_of_Y_variability:    1
+                        lagrange_multiplier_of_Y_variability: 1.0e-1                     
+                        derivative_order_of_T_variability:    1
+                        lagrange_multiplier_of_T_variability: 1.0e-2       
+            mode[2]:
+                initial_guess:                      #1          
+                    value:                          [4000.0 ]
+                    min:                            [10.0   ] 
+                    max:                            [7000.0 ]
+                    index_of_wavelength_involved:   [0      ]
+                single_pixel:
+                    smoothness_constraints:
+                        difference_order: 0
+                        lagrange_multiplier: 0
+                multi_pixel:
+                    smoothness_constraints:
+                        derivative_order_of_X_variability:    1
+                        lagrange_multiplier_of_X_variability: 1.0e-1                        
+                        derivative_order_of_Y_variability:    1
+                        lagrange_multiplier_of_Y_variability: 1.0e-1                     
+                        derivative_order_of_T_variability:    1
+                        lagrange_multiplier_of_T_variability: 1.0e-2       
+                        
+#        characteristic[8]: #8
+#            type: surface_land_polarized_maignan_breon
+#            retrieved: false
+#            mode[1]:
+#                initial_guess:                       #1        #2        #3        #4        #5        #6        
+#                    value:                          [2.1,      2.1,      2.1,      2.1,      2.1,      2.1   ]
+#                    min:                            [0.01,     0.01,     0.01,     0.01,     0.01,     0.01  ]
+#                    max:                            [10.03,    10.03,    10.03,    10.03,    10.03,    10.03 ]
+#                    index_of_wavelength_involved:   [1,        2,        3,        4,        5,        6     ]
+#                single_pixel:
+#                    smoothness_constraints:
+#                        difference_order: 1
+#                        lagrange_multiplier: 10.0e-0
+#                multi_pixel:
+#                   smoothness_constraints:
+#                       derivative_order_of_X_variability:    1
+#                       lagrange_multiplier_of_X_variability: 0.0e-3                        
+#                       derivative_order_of_Y_variability:    1
+#                       lagrange_multiplier_of_Y_variability: 0.0e-3
+#                       derivative_order_of_T_variability:    1
+#                       lagrange_multiplier_of_T_variability: 1.0e-0  
+#        
