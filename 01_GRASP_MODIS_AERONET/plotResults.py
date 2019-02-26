@@ -7,25 +7,25 @@ from importlib import reload
 import runGRASP
 reload(runGRASP)
 from runGRASP import graspDB
-#rsltsFile = '/Users/wrespino/Synced/Working/MODAERO_retrievalPickles/TerraLand_Select8Sites_YAMLb4a787f_maxBlue_3lgnrm_Nt300_AEROfrcd_V2c.pkl'
-rsltsFile = '/Users/wrespino/Synced/Working/MODAERO_retrievalPickles/TerraLand_Select8LandSites_YAML49bc0b7_maxBlue_3lgnrm_Nt300_AEROfrcd_V2c.pkl'
-#rsltsFile = '/Users/wrespino/Synced/Working/MODAERO_retrievalPickles/TerraLand_FullLandSites_YAML6ee6a0a_maxBlue_3lgnrm_Nt300_V2c.pkl'
-#rsltsFile = '/Users/wrespino/Synced/Working/MODAERO_retrievalPickles/Terra_GLOBALandDUSTsites_YAML7b69bf3_3lgnrm_V2b.pkl' # A new king! (and his challengers were defeated)
+
+#rsltsFile = '/Users/wrespino/Synced/Working/MODAERO_retrievalPickles/TerraLand_Select8LandSites_YAML0e60019_maxBlue_3lgnrm_dlPar1_Nt300_V2c.pkl'
+#rsltsFile = '/Users/wrespino/Synced/Working/MODAERO_retrievalPickles/TerraLand_Select8LandSites_YAML0e60019_maxBlue_3lgnrm_Nt300_AEROfrcd_V2c.pkl'
+rsltsFile = '/Users/wrespino/Synced/Working/MODAERO_retrievalPickles/Terra_GLOBALandDUSTsites_YAML7b69bf3_3lgnrm_V2b.pkl' # A new king! (and his challengers were defeated)
 #rsltsFile = '/Users/wrespino/Synced/Working/MODAERO_retrievalPickles_land/TerraLand_WallopsOnly_YAML4cae9bd_3lgnrm_AEROincld_V2b.pkl'
 #dict_keys(['datetime', 'longitude', 'latitude', 'r', 'dVdlnr', 'rv', 'sigma', 'vol', 'sph', 'lambda', 'aod', 'aodMode', 'ssa', 'ssaMode', 'n', 'k', 'albedo', 'wtrSurf', 'brdf', 'sca_ang', 'meas_I', 'fit_I', 'aodAERO', 'aodDT', 'metaData', 'AEROloc'])
-#xVarNm = 'aodAERO'
+xVarNm = 'aodAERO' #ANY CHANCE THIS IS BEING INTERPOLATED WRONG NOW?
 #yVarNm = 'aodDT'
-#yVarNm = 'aod'
-#yVarNm = 'wtrSurf'
-#xVarNm = 'lambda'
-xVarNm = 'datetime'
-yVarNm = 'brdf'
+yVarNm = 'aod'
+#xVarNm = 'n'
+#yVarNm = 'k'
+#xVarNm = 'datetime'
+#xVarNm = 'brdf'
 #yInd = [1]
-#cVarNm = 'datetime'
+#cVarNm = 'vol'
 cVarNm= False
 EEfunc = lambda x: 0.03+0.1*x
 
-filterSites = True
+filterSites = False
 #frbdnSites = np.r_[179,1146,535,840,175] # need to uncomment/comment below to activate
 keepSites = np.r_[9] #9,518,77,1,285,514,946,961
 
@@ -53,33 +53,33 @@ else:
 
 # MANUAL SCAT PLOT
 #plt.figure(figsize=(6,5))
-#gDB.scatterPlot(xVarNm, yVarNm, 0, [0,5], cVarNm, 2, one2oneScale=False, 
+#gDB.scatterPlot(xVarNm, yVarNm, 1, 1, cVarNm, 1, one2oneScale=False, 
 #                    logScl=False, customAx=plt.gca(), Rstats=False, rsltInds=vldInd, pltLabel=os.path.basename(rsltsFile))
 
-## DIFF PLOTS
-#plt.figure(figsize=(9,5))
-##axHnd = plt.subplot(2,1,2)
-#Nplts=6
-#for i in range(0,Nplts):
-#    axHnd = plt.subplot(2,int(np.ceil(Nplts/2)),i+1)
-#    gDB.diffPlot(xVarNm, yVarNm, i, i, lambdaFuncEE=EEfunc, FS=12, rsltInds=vldInd,
-#                 pltLabel=os.path.basename(rsltsFile), clnLayout=(i==(Nplts-1)))
-#
-# SCAT PLOTS
+# DIFF PLOTS
 plt.figure(figsize=(9,5))
-##axHnd = plt.subplot(2,1,1)
-Nplts=6
+#axHnd = plt.subplot(2,1,2)
+Nplts=8
 for i in range(0,Nplts):
     axHnd = plt.subplot(2,int(np.ceil(Nplts/2)),i+1)
-#    gDB.scatterPlot(xVarNm, yVarNm, i, i, cVarNm, 0, one2oneScale=True, pltLabel=os.path.basename(rsltsFile),
-#                    logScl=True, customAx=axHnd, Rstats=True, rsltInds=vldInd, clnLayout=(i==(Nplts-1)))
-###    ind1= int(np.floor(i/2)) # 0, 0, 1
-###    ind2= int(np.ceil((i)/2)+1) # 1 2 2
-    ind1 = 0
-    ind2 = [0,i]
-    ind3 = [1]
-    gDB.scatterPlot(xVarNm, yVarNm, ind1, ind2, cVarNm, ind3, one2oneScale=False, 
-                    logScl=False, customAx=axHnd, Rstats=False, rsltInds=vldInd, clnLayout=(i==(Nplts-1)))
+    gDB.diffPlot(xVarNm, yVarNm, i, i, lambdaFuncEE=EEfunc, FS=12, rsltInds=vldInd,
+                 pltLabel=os.path.basename(rsltsFile), clnLayout=(i==(Nplts-1)))
+
+# SCAT PLOTS
+plt.figure(figsize=(9,5))
+#axHnd = plt.subplot(2,1,1)
+Nplts=8
+for i in range(0,Nplts):
+    axHnd = plt.subplot(2,int(np.ceil(Nplts/2)),i+1)
+    gDB.scatterPlot(xVarNm, yVarNm, i, i, cVarNm, 0, one2oneScale=True, pltLabel=os.path.basename(rsltsFile),
+                    logScl=True, customAx=axHnd, Rstats=True, rsltInds=vldInd, clnLayout=(i==(Nplts-1)))
+######    ind1= int(np.floor(i/2)) # 0, 0, 1
+######    ind2= int(np.ceil((i)/2)+1) # 1 2 2
+#    ind1 = [0,i]
+#    ind2 = [0,i]
+#    ind3 = [0]
+#    gDB.scatterPlot(xVarNm, yVarNm, ind1, ind2, cVarNm, ind3, one2oneScale=False, 
+#                    logScl=False, customAx=axHnd, Rstats=False, rsltInds=vldInd, clnLayout=(i==(Nplts-1)))
 
 # HIST PLOTS
 #plt.figure(figsize=(9,6))

@@ -39,7 +39,7 @@ siteID = np.r_[9,518,77,1,285,514,946,961]
 
 orbHght = 713 # km
 saveNPZ = False
-incldAERO = True # Include AERONET AOD as input to retrieval
+incldAERO = False # Include AERONET AOD as input to retrieval
 
 #npzPath = os.path.join(basePath, 'Remote_Sensing_Projects/GRASP_MODIS/Land_MYD04_L2_C61_V2c.out.npz') # Use AQUA land Data
 #dirPath = os.path.join(basePath, 'Remote_Sensing_Projects/GRASP_MODIS/landV2/MYD*.outv2') 
@@ -51,7 +51,7 @@ dirPath = os.path.join(basePath, 'Remote_Sensing_Projects/GRASP_MODIS/landV2/MOD
 #dirPath = os.path.join(basePath, 'Remote_Sensing_Projects/GRASP_MODIS/oceanV2/MOD*.out') 
 fileType = 'land' # 'land' or 'ocean'
 
-savePath = os.path.join(basePath, 'Working/MODAERO_retrievalPickles/TerraLand_Select8Sites_YAMLb4a787f_maxBlue_3lgnrm_Nt300_AEROfrcd_V2c.pkl')  # Save results here
+savePath = os.path.join(basePath, 'Working/MODAERO_retrievalPickles/TerraLand_Select8Sites_YAMLa74e24c_maxBlue_3lgnrm_Nt300_V2c.pkl')  # Save results here
 #pathYAML = os.path.join(basePath, 'Remote_Sensing_Analysis/GRASP_PythonUtils/settings_modis_2lgnrm_optimalOcean.yml') # YAML file to use
 pathYAML = os.path.join(basePath, 'Remote_Sensing_Analysis/GRASP_PythonUtils/settings_modis_3lgnrm_optimalLand_maxBlue.yml') # YAML file to use
 #pathYAML = os.path.join(basePath, 'Local_Code_MacBook/grasp_open/examples/polder/settings_example_polder_inversion.yml') # YAML file to use

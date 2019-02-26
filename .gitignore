@@ -2,3 +2,6 @@
 *-36.pyc
 __init__.py
 temp*.py
+temp.py
+01_GRASP_MODIS_AERONET/__pycache__
+temp2.py
