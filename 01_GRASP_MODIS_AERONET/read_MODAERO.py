@@ -7,8 +7,8 @@ import hashlib
 import os
 import sys
 from math import ceil
-#sys.path.append(os.path.join(os.path.realpath(__file__),"..","GRASP_PythonUtils"))
-sys.path.append(os.path.join("..", "GRASP_PythonUtils"))
+#sys.path.append(os.path.join(os.path.realpath(__file__),"..","GRASP_scripts")) # this works on DISCOVER
+sys.path.append(os.path.join("..", "GRASP_scripts")) # relative PATH to runGRASP, pixel classes
 from runGRASP import graspRun, pixel
 from miscFunctions import angstrmIntrp
 

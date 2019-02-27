@@ -6,7 +6,7 @@ import os
 import warnings
 import numpy as np
 from read_MODAERO import modaeroDB
-sys.path.append(os.path.join("..", "GRASP_PythonUtils"))
+sys.path.append(os.path.join("..", "GRASP_scripts")) # relative PATH to runGRASP class
 from runGRASP import graspDB
 
 # DISCOVER
@@ -52,9 +52,7 @@ dirPath = os.path.join(basePath, 'Remote_Sensing_Projects/GRASP_MODIS/landV2/MOD
 fileType = 'land' # 'land' or 'ocean'
 
 savePath = os.path.join(basePath, 'Working/MODAERO_retrievalPickles/TerraLand_Select8Sites_YAMLa74e24c_maxBlue_3lgnrm_Nt300_V2c.pkl')  # Save results here
-#pathYAML = os.path.join(basePath, 'Remote_Sensing_Analysis/GRASP_PythonUtils/settings_modis_2lgnrm_optimalOcean.yml') # YAML file to use
-pathYAML = os.path.join(basePath, 'Remote_Sensing_Analysis/GRASP_PythonUtils/settings_modis_3lgnrm_optimalLand_maxBlue.yml') # YAML file to use
-#pathYAML = os.path.join(basePath, 'Local_Code_MacBook/grasp_open/examples/polder/settings_example_polder_inversion.yml') # YAML file to use
+pathYAML = os.path.join(basePath, 'Local_Code_MacBook/MODAERO_Analysis/YAML_files/settings_modis_3lgnrm_optimalLand_maxBlue.yml') # YAML file to use
 dirGRASP = False
 #dirGRASP = os.path.join(basePath, 'Working/retreivalSandbox') # working path for GRASP, good for debuging
 maxNtPerSeg=300 # how many pixels per grasp run? (DICOVER Test use 4 -> 45 grasp runs)
