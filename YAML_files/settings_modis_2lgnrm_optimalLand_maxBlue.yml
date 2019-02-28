@@ -40,13 +40,13 @@ retrieval:
             measurement_type[1]:
                 type: I
                 index_of_wavelength_involved: [1, 2, 3, 4, 5, 6, 7, 8, 9]             
-        noise[2]:
-            standard_deviation_synthetic: 0.0
-            error_type:   absolute
-            standard_deviation:  0.01
-            measurement_type[1]:
-                type: AOD
-                index_of_wavelength_involved: [1,  2, 3, 4, 5, 6, 7, 8, 9]
+#        noise[2]:
+#            standard_deviation_synthetic: 0.0
+#            error_type:   absolute
+#            standard_deviation:  0.01
+#            measurement_type[1]:
+#                type: AOD
+#                index_of_wavelength_involved: [1,  2, 3, 4, 5, 6, 7, 8, 9]
 
     radiative_transfer:
         number_of_layers: 50 # 50->5 ~5% AOD change, 15% speed up
@@ -215,9 +215,9 @@ retrieval:
             retrieved: true
             mode[1]: 
                 initial_guess: 
-                    value:                        [0.14,       0.51]
-                    min:                           [0.08,      0.4]
-                    max:                          [0.25,      0.76]
+                    value:                        [0.15,      0.50]
+                    min:                           [0.12,      0.48]
+                    max:                          [0.185,    0.53]
                     index_of_wavelength_involved: [0,     0]
                 single_pixel:
                     a_priori_estimates:
@@ -260,7 +260,7 @@ retrieval:
             mode[1]:
                 initial_guess:                      #1      
                     value:                          [0.95  ]
-                    min:                            [0.9 ]
+                    min:                            [0.94 ]
                     max:                            [0.99999]
                     index_of_wavelength_involved:   [0     ]
                 single_pixel:
@@ -299,9 +299,9 @@ retrieval:
             retrieved: true
             mode[1]:
                 initial_guess:                                          #1         #2       #3       #4       #5      #6       #7      #8       #9
-                    value:                                               [0.0030,    0.0030, 0.0030,    0.0030,    0.0030,      0.0030,     0.0030,      0.007,     0.004 ]
-                    min:                                                  [0.0002,    0.0002, 0.0002,    0.0002,    0.0002,       0.0002,   0.0002,   0.0005,  0.0003]
-                    max:                                                 [0.018,    0.016,       0.015,      0.013,        0.01 ,       0.009,     0.008,    0.008,   0.008 ]
+                    value:                                               [0.00370, 0.00370, 0.00370, 0.00368, 0.00368, 0.00371, 0.00380, 0.00385, 0.00385]
+                    min:                                                  [0.00312, 0.00314, 0.00315, 0.00323, 0.00328, 0.00332, 0.00349, 0.00352, 0.00352]
+                    max:                                                 [0.00690, 0.00678, 0.00673, 0.00647, 0.00638, 0.00615, 0.00591, 0.00591, 0.00582]
                     index_of_wavelength_involved:   [1,              2,              3,                4,               5,                6,               7,                 8,               9        ]
                 single_pixel:
                     smoothness_constraints:
@@ -339,9 +339,9 @@ retrieval:
             retrieved: true
             mode[1]:
                 initial_guess:                                        #1         #2       #3       #4       #5      #6       #7      #8       #9
-                    value:                                               [ 1.41,  1.41,  1.41,   1.41,    1.41,     1.41,       1.41,     1.4,     1.39    ] # Tight Range is key to good results
-                    min:                                                  [1.35,     1.35,    1.35,    1.35,       1.35,        1.35,        1.35,       1.34,   1.34    ]
-                    max:                                                 [1.55,    1.55,      1.55,    1.55,       1.55,   1.55,    1.55,   1.55,      1.55]
+                    value:                                               [ 1.40364, 1.40388, 1.40412, 1.40659, 1.40738, 1.40809, 1.40726, 1.40577, 1.40558    ] # Tight Range is key to good results
+                    min:                                                  [1.35000, 1.35258, 1.35395, 1.36462, 1.36556, 1.37127, 1.37423, 1.37401, 1.37424  ]
+                    max:                                                 [1.41971, 1.41757, 1.41691, 1.42011, 1.42804, 1.43093, 1.43586, 1.42697, 1.42680]
                     index_of_wavelength_involved:   [1,           2,         3,         4,         5,         6,        7 ,    8,    9 ] 
                 single_pixel:
                     smoothness_constraints:
