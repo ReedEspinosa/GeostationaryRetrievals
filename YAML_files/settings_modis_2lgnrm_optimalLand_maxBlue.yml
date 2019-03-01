@@ -115,8 +115,8 @@ retrieval:
             retrieved: true
             mode[1]: 
                 initial_guess: 
-                    value:                        [0.005]
-                    min:                          [0.0002]
+                    value:                        [0.05]
+                    min:                          [0.0015]
                     max:                          [2.000]
                     index_of_wavelength_involved: [0]
                 single_pixel:
@@ -133,9 +133,9 @@ retrieval:
                         lagrange_multiplier_of_T_variability: 0
             mode[2]: 
                 initial_guess: 
-                    value:                        [0.001]
-                    min:                          [0.00005]
-                    max:                          [2.00]
+                    value:                        [0.0001]
+                    min:                          [0.000001]
+                    max:                          [0.800]
                     index_of_wavelength_involved: [0]
                 single_pixel:
                     smoothness_constraints:
