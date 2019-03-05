@@ -164,7 +164,7 @@ retrieval:
                         difference_order: 1
                         lagrange_multiplier: 0
                     a_priori_estimates:
-                        lagrange_multiplier:      [1.0e-1, 1.0e-1, 1.0e-1, 1.0e-2, 1.0e-6, 1.0e-6, 1.0e-6,1.0e-6, 1.0e-6] 
+                        lagrange_multiplier:      [1.0e-2, 1.0e-2, 1.0e-2, 5.0e-4, 1.0e-6, 1.0e-6, 1.0e-6,1.0e-6, 1.0e-6] 
                 multi_pixel:
                     smoothness_constraints:
                         derivative_order_of_X_variability:    0
