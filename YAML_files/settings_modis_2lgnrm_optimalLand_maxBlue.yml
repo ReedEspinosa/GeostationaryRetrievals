@@ -154,8 +154,8 @@ retrieval:
             type: surface_land_brdf_ross_li
             retrieved: true
             mode[1]:    
-                initial_guess:                                       # 0.41          0.44        0.469,     0.555       0.645       0.8585,     1.24,           1.64,          2.13
-                    value:                                               [0.074030, 0.075030,  0.076030,  0.11,    0.09,         0.44,       0.36,          0.25504,   0.13611]     
+                initial_guess:                                       # 0.41          0.44        0.469,          0.555       0.645       0.8585,     1.24,           1.64,          2.13
+                    value:                                               [0.074030, 0.075030,  0.076030,   0.11,        0.09,         0.38,        0.34,          0.25504,   0.13611]     
                     min:                                                  [0.02,       0.02,       0.02,    0.035,   0.02040,   0.19599,   0.1,          0.11700,   0.04]
                     max:                                                 [0.11,            0.12,          0.12,      0.15,         0.15,           0.6,        0.59,        0.41,         0.25509]                                                                                
                     index_of_wavelength_involved:   [1,         2,        3,        4,         5,        6,       7,      8,      9    ]
@@ -164,7 +164,7 @@ retrieval:
                         difference_order: 1
                         lagrange_multiplier: 0
                     a_priori_estimates:
-                        lagrange_multiplier:      [1.0e-2, 1.0e-2, 1.0e-2, 5.0e-4, 1.0e-6, 1.0e-6, 1.0e-6,1.0e-6, 1.0e-6] 
+                        lagrange_multiplier:      [1.0e-2, 1.0e-2, 1.0e-2, 5.0e-4, 1.0e-5, 1.0e-5, 1.0e-6,1.0e-6, 1.0e-7] 
                 multi_pixel:
                     smoothness_constraints:
                         derivative_order_of_X_variability:    0
