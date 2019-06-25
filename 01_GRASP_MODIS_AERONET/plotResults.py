@@ -13,13 +13,13 @@ from miscFunctions import angstrm
 #rsltsFile = '/Users/wrespino/Synced/Working/MODAERO_retrievalPickles/TerraLand_Select7Sites_YAMLd74dc51_maxBlue_2lgnrm_Nt200_V2c.pkl'
 #rsltsFile = '/Users/wrespino/Synced/Working/MODAERO_retrievalPickles/Terra_GLOBALandDUSTsites_YAML1b95f26_3lgnrm_V2b.pkl' # the real ocean king!
 #rsltsFile = '/Users/wrespino/Synced/Working/MODAERO_retrievalPickles/Terra_GLOBALandDUSTsites_YAML1b95f26_3lgnrm_Nt120_V2c.pkl' # A [OLD] new king! (and his challengers were defeated)
-rsltsFile = '/Users/wrespino/Synced/Working/MODAERO_retrievalPickles/Terra_GLOBALandDUSTandLT20Msites_YAML1b95f26_3lgnrm_Nt120_V2c.pkl'
+rsltsFile = '/Users/wrespino/Synced/Working/MODAERO_retrievalPickles/Terra_20sites_bfdc446YAML_looseIRI_incldAero.pkl'
 #dict_keys(['datetime', 'longitude', 'latitude', 'r', 'dVdlnr', 'rv', 'sigma', 'vol', 'sph', 'lambda', 'aod', 'aodMode', 'ssa', 'ssaMode', 'n', 'k', 'albedo', 'wtrSurf', 'brdf', 'sca_ang', 'meas_I', 'fit_I', 'aodAERO', 'aodDT', 'metaData', 'AEROloc'])
 #xVarNm = 'aodAERO' #ANY CHANCE THIS IS BEING INTERPOLATED WRONG NOW?
 #yVarNm = 'aodDT'
 #yVarNm = 'aod'
-#xVarNm = 'vol'
-#xVarNm = 'angstrm0'
+xVarNm = 'metaData'
+yVarNm = 'windSpeed'
 #yVarNm = 'angstrm1'
 angLvarNm = ['lambda','lambda','lambdaDT',]
 angTvarNm = ['aodAERO', 'aod', 'aodDT']
@@ -51,6 +51,11 @@ if xVarNm=='relResFit' or yVarNm=='relResFit' or cVarNm=='relResFit':
         relRes = (rslt['meas_I']-rslt['fit_I'])/(2*rslt['meas_I']+rslt['fit_I'])
         gDB.rslts[i]['relResFit'] = np.minimum(relRes,1e9) # can lower if needed
 
+if xVarNm=='windSpeed' or yVarNm=='windSpeed' or cVarNm=='windSpeed':
+    for i,rslt in enumerate(gDB.rslts):
+        relRes = (2*rslt['wtrSurf'][2,0]-0.003)/0.00512
+        gDB.rslts[i]['windSpeed'] = np.minimum(relRes,1e9) # can lower if needed
+
 for j in range(3): # note we go 0-2
     if xVarNm=='angstrm%d'%j or yVarNm=='angstrm%d'%j or cVarNm=='angstrm%d'%j:
         for i,rslt in enumerate(gDB.rslts):
@@ -66,28 +71,28 @@ else:
     vldInd = slice(None)
 
 # MANUAL SCAT PLOT
-#plt.figure(figsize=(6,5))
-#gDB.scatterPlot(xVarNm, yVarNm, 0, 0, cVarNm, 3, one2oneScale=True, 
-#                    logScl=False, customAx=plt.gca(), Rstats=True, rsltInds=vldInd, pltLabel=os.path.basename(rsltsFile))
+plt.figure(figsize=(6,5))
+gDB.scatterPlot(xVarNm, yVarNm, 1, 0, cVarNm, 3, one2oneScale=True, 
+                    logScl=False, customAx=plt.gca(), Rstats=True, rsltInds=vldInd, pltLabel=os.path.basename(rsltsFile))
 #sys.exit()
 
 # DIFF PLOTS
-plt.figure(figsize=(9,5))
-#axHnd = plt.subplot(2,1,2)
-Nplts=6
-for i in range(0,Nplts):
-    axHnd = plt.subplot(2,int(np.ceil(Nplts/2)),i+1)
-    gDB.diffPlot(xVarNm, yVarNm, i, i, lambdaFuncEE=EEfunc, FS=12, rsltInds=vldInd,
-                 pltLabel=os.path.basename(rsltsFile), clnLayout=(i==(Nplts-1)))
+#plt.figure(figsize=(9,5))
+##axHnd = plt.subplot(2,1,2)
+#Nplts=6
+#for i in range(0,Nplts):
+#    axHnd = plt.subplot(2,int(np.ceil(Nplts/2)),i+1)
+#    gDB.diffPlot(xVarNm, yVarNm, i, i, lambdaFuncEE=EEfunc, FS=12, rsltInds=vldInd,
+#                 pltLabel=os.path.basename(rsltsFile), clnLayout=(i==(Nplts-1)))
 ##
 ## SCAT PLOTS
-plt.figure(figsize=(9,5))
-#axHnd = plt.subplot(2,1,1)
-Nplts=6
-for i in range(0,Nplts):
-    axHnd = plt.subplot(2,int(np.ceil(Nplts/2)),i+1)
-    gDB.scatterPlot(xVarNm, yVarNm, i, i, cVarNm, [0,i], one2oneScale=True, pltLabel=os.path.basename(rsltsFile),
-                    logScl=True, customAx=axHnd, Rstats=True, rsltInds=vldInd, clnLayout=(i==(Nplts-1)))
+#plt.figure(figsize=(9,5))
+##axHnd = plt.subplot(2,1,1)
+#Nplts=6
+#for i in range(0,Nplts):
+#    axHnd = plt.subplot(2,int(np.ceil(Nplts/2)),i+1)
+#    gDB.scatterPlot(xVarNm, yVarNm, i, i, cVarNm, [0,i], one2oneScale=True, pltLabel=os.path.basename(rsltsFile),
+#                    logScl=True, customAx=axHnd, Rstats=True, rsltInds=vldInd, clnLayout=(i==(Nplts-1)))
 #    ind1 = [0]
 #    ind2 = [0,i]
 #    ind3 = [0]
