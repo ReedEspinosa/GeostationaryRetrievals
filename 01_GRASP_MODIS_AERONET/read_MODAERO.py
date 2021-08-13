@@ -32,7 +32,7 @@ class modaeroDB(object):
         self.siteSegment = [] # grouped data is after saving stage
         
     def setConstants(self, dataFrmt):
-        self.MOD_LAMDA = np.r_[0.469, 0.555, 0.645, 0.8585, 1.24, 1.64, 2.13, 0.412, 0.443]
+        self.MOD_LAMDA = np.r_[0.469, 0.555, 0.645, 0.8585, 1.24, 1.64, 2.13, 0.412, 0.443] # BUG: Are we sure this is correct order????
         self.AERO_LAMDA = np.r_[1.64, 1.02, 0.87, 0.865, 0.779, 0.675, 0.667, 0.62, 0.56, 0.555, 0.551, 0.532, 0.531, 0.51, 0.5, 0.49, 0.443, 0.44, 0.412, 0.4, 0.38, 0.34, 0.554]
         self.AOD_IND = np.r_[2:25] # lambda above; next 4 are currently in same spot for land & ocean
         self.MOD_LOC_IND = np.r_[0:2, 50:52] # year, day, LAT, LON, DATENUM* (*added after calling sortData())
@@ -82,7 +82,7 @@ class modaeroDB(object):
         self.metaData = np.block([[self.metaData], [fileData[:, self.META_IND]]])
         self.modDT_aod = np.block([[self.modDT_aod], [fileData[:, self.MOD_AOD_IND]]])
         self.modDB_aod = np.block([[self.modDB_aod], [fileData[:, self.DB_AOD_IND]]])
-        self.sorted = False     
+        self.sorted = False
 
     def readDIR(self, dirPath):
         filePaths = glob.glob(dirPath)
