@@ -13,9 +13,10 @@ from runGRASP import graspRun, pixel
 from miscFunctions import angstrmIntrp
 
 class modaeroDB(object):
-    
-    def __init__(self, loadPath=None, dataFrmt='ocean', maxNtPerSeg=120):
+    def __init__(self, loadPath=None, dataFrmt='ocean', maxNtPerSeg=120, instrument='MODIS', verbose=0):
+        self.verbose = verbose
         self.GRP_DAY_LMT = np.r_[maxNtPerSeg] # maximum nt in GRASP build, each site seg will have this many unique datenums
+        self.instrument = instrument.upper()
         if loadPath is None or not self.loadData(loadPath):
             self.setConstants(dataFrmt)
             self.rflct = np.array([]).reshape(0,self.RFLCT_IND.shape[0])
@@ -32,7 +33,12 @@ class modaeroDB(object):
         self.siteSegment = [] # grouped data is after saving stage
         
     def setConstants(self, dataFrmt):
-        self.MOD_LAMDA = np.r_[0.469, 0.555, 0.645, 0.8585, 1.24, 1.64, 2.13, 0.412, 0.443] # BUG: Are we sure this is correct order????
+        if self.instrument=='MODIS':
+            self.MOD_LAMDA = np.r_[0.469, 0.555, 0.645, 0.8585, 1.24, 1.64, 2.13, 0.412, 0.443] # BUG: Are we sure this is correct order????
+        elif self.instrument=='ABI':
+            self.MOD_LAMDA = np.r_[0.47, 0.64, 0.86, 1.6, 2.2] # BUG: Are we sure this is correct order? (Or even values?) [Note we skip some that are -9999; see RFLCT_IND below]
+        else:
+            assert False, "Instrument type of %s not recognized!" % instrument
         self.AERO_LAMDA = np.r_[1.64, 1.02, 0.87, 0.865, 0.779, 0.675, 0.667, 0.62, 0.56, 0.555, 0.551, 0.532, 0.531, 0.51, 0.5, 0.49, 0.443, 0.44, 0.412, 0.4, 0.38, 0.34, 0.554]
         self.AOD_IND = np.r_[2:25] # lambda above; next 4 are currently in same spot for land & ocean
         self.MOD_LOC_IND = np.r_[0:2, 50:52] # year, day, LAT, LON, DATENUM* (*added after calling sortData())
@@ -40,37 +46,44 @@ class modaeroDB(object):
         self.GEOM_IND = np.r_[52:57] # SOL_ZEN, SOL_AZM, SEN_ZEN, SEN_ASM, SCAT_ANG
         self.surfType = dataFrmt.lower()
         if self.surfType=='ocean':
-            self.MOD_AOD_LAMDA = np.r_[0.469, 0.555, 0.645, 0.8585, 1.24, 1.64, 2.13]
-            self.MOD_AOD_IND = np.r_[71:78] # DT retrieved AOD "Average", wavelengths 1st seven values of MOD_LAMDA
-            self.DB_AOD_LAMDA = np.array([], dtype=np.int)
+            self.DB_AOD_LAMDA = np.array([], dtype=np.int) # No Deep Blue over the ocean
             self.DB_AOD_IND = np.array([], dtype=np.int)
-            self.RFLCT_IND = np.r_[117:126] #N=9
-            self.META_IND = np.r_[142:144] # GLINT_ANG, WIND_SPEED
-            extHashStr = self.MOD_AOD_IND.tostring()+self.META_IND.tostring() 
+            if self.instrument=='MODIS':
+                self.MOD_AOD_LAMDA = np.r_[0.469, 0.555, 0.645, 0.8585, 1.24, 1.64, 2.13]
+                self.MOD_AOD_IND = np.r_[71:78] # DT retrieved AOD "Average", wavelengths 1st seven values of MOD_LAMDA
+                self.RFLCT_IND = np.r_[117:126] #N=9
+                self.META_IND = np.r_[142:144] # GLINT_ANG, WIND_SPEED
+            elif self.instrument=='ABI':
+                self.MOD_AOD_LAMDA = np.r_[0.47,   0.55,  0.64,   0.86,  1.2,  1.6, 2.2] # BUG: Are we sure this is correct order? (Or even values?)
+                self.MOD_AOD_IND = np.r_[61:68] # DT retrieved AOD "Average", wavelengths 1st seven values of MOD_LAMDA
+                self.RFLCT_IND = np.r_[102, 104:106, 107:109] #N=5; Yingxi's files have more wavelengths so we skip around
+                self.META_IND = np.r_[57, 116] # GLINT_ANG, WIND_SPEED            
+            extHashStr = self.MOD_AOD_IND.tobytes()+self.META_IND.tobytes() 
         elif self.surfType=='land':
+            assert self.instrument=='MODIS', 'Land currently only works with the MODIS instrument type'
             self.MOD_AOD_LAMDA = np.r_[0.469, 0.555, 0.645, 2.13]
             self.MOD_AOD_IND = np.r_[62:66] # DT retrieved AOD "Average", wavelengths 1st seven values of MOD_LAMDA
             self.DB_AOD_LAMDA = np.r_[0.412, 0.469, 0.555, 0.645]
             self.DB_AOD_IND = np.r_[107, 108, 106, 109]
             self.RFLCT_IND = np.r_[77:86] # N=9 OR do we want to include DB reflectances too?
             self.META_IND = np.r_[60,121] # Aerosol_Type, altitude_land
-            extHashStr = self.MOD_AOD_IND.tostring()+self.DB_AOD_IND.tostring()+self.META_IND.tostring()
+            extHashStr = self.MOD_AOD_IND.tobytes()+self.DB_AOD_IND.tobytes()+self.META_IND.tobytes()
         else:
             assert False, 'Unrecognized dataFrmt string, land or ocean?'
-        hashObj = hashlib.sha1(self.MOD_LAMDA.tostring()+self.RFLCT_IND.tostring()
-                  +self.AERO_LAMDA.tostring()+self.AOD_IND.tostring()+self.MOD_LOC_IND.tostring()
-                  +self.AERO_LOC_IND.tostring()+self.GEOM_IND.tostring()+extHashStr)
+        hashObj = hashlib.sha1(self.MOD_LAMDA.tobytes()+self.RFLCT_IND.tobytes()
+                  +self.AERO_LAMDA.tobytes()+self.AOD_IND.tobytes()+self.MOD_LOC_IND.tobytes()
+                  +self.AERO_LOC_IND.tobytes()+self.GEOM_IND.tobytes()+extHashStr)
         self.SET_HASH = np.frombuffer(hashObj.digest(), dtype='uint32')[0] # we convert the first 32 bits to unsigned int
-
         
     def readFile(self, filePath):
 #        warnings.filterwarnings('ignore', message="some errors were detected") # "HDF load error" lines will produce warnings
-        fileData = np.genfromtxt(filePath, delimiter='  ', invalid_raise=False) 
+        delim = ' ' if self.instrument=='ABI' else '  '
+        fileData = np.genfromtxt(filePath, delimiter=delim, invalid_raise=False) 
 #        warnings.resetwarnings()
         warnings.filterwarnings('ignore', message="invalid value encountered in less_equal") # HDF has "-np.nan" sometimes 
         fileData[fileData <= -9999] = np.nan
         warnings.resetwarnings()
-        assert np.r_[self.RFLCT_IND,self.META_IND].max()<fileData.shape[1], \
+        assert np.r_[self.RFLCT_IND, self.META_IND].max()<fileData.shape[1], \
             'Some indices exceeded the number of columns in the text file.\n Is %s really %s pixels?' % (filePath, self.surfType)
         fileData = fileData[np.all(fileData[:, self.MOD_AOD_IND]>0, axis=1), :] # DT AOD <=0 is bad sign
         fileData = fileData[np.all(fileData[:, self.RFLCT_IND]>0, axis=1), :] # R <=0 is also a bad sign
@@ -129,20 +142,24 @@ class modaeroDB(object):
                 numDays = len(np.unique(np.atleast_2d(self.siteSegment[-1].mod_loc)[:,4]))
                 if (numDays == self.GRP_DAY_LMT) and (datenumSep[i] != 0) and (i != nowInd[-1]):
                     self.siteSegment.append(aeroSite(AEROloc, self.MOD_LAMDA, self.AERO_LAMDA)) # This segment is full, start a new one
-            # code to prevent siteSegments with only a couple days would go here
+            # code to prevent siteSegments within only a couple days would go here
         [seg.condenceAOD() for seg in self.siteSegment] # Remove unused AOD wavelengths
         return self.siteSegment
                              
-    def graspPackData(self, pathYAML, incldAERO=False, orbHghtKM=713, dirGRASP=False): # HINT: THIS WILL CHANGE FOR ix>1
+    def graspPackData(self, pathYAML, incldAERO=False, orbHghtKM=713, dirGRASP=False, releaseYAML=False): # HINT: THIS WILL CHANGE FOR ix>1
         lndPrct = 100*np.int(self.surfType=='land')
         graspObjs = []
         measLwrBnd = 0.00001 # minimum allowed value for radiance and AOD
-        lambdaUsed = np.r_[7,8,0,1,2,3,4,5,6] if self.surfType=='land' else np.r_[0:7] # HINT must be in order of ascending wavelength
+        if self.instrument=='MODIS':
+            lambdaUsed = np.r_[7,8,0,1,2,3,4,5,6] if self.surfType=='land' else np.r_[0:7] # HINT must be in order of ascending wavelength
+        elif self.instrument=='ABI':
+            lambdaUsed = np.r_[0:5]
         for seg in self.siteSegment:
-            gObj = graspRun(pathYAML, orbHghtKM, dirGRASP)
+            gObj = graspRun(pathYAML, orbHghtKM, dirGRASP, releaseYAML=releaseYAML)
             gObj.AUX_dict = []
             unqDTs = np.unique(seg.mod_loc[:,-1])
-#            unqDTs = np.unique(seg.mod_loc[:,-1])[0:3] # HACK to make run faster
+#             unqDTs = np.unique(seg.mod_loc[:,-1])[0:3] # HACK001 [1/2] – make run faster
+            if self.verbose: print('Packing segment at AERONET siteID=%d with %d pixels' % (seg.aero_loc[0], len(unqDTs)))
             for unqDT in unqDTs:
                 nowInd = np.nonzero(seg.mod_loc[:,-1] == unqDT)[0]
                 MODlon = np.mean(seg.mod_loc[nowInd, 3])
@@ -160,6 +177,7 @@ class modaeroDB(object):
                     dummyAng = [] if np.isnan(aodAEROinpt) else 0
                     thtv = np.r_[np.mean(seg.geom[nowInd, 2]), dummyAng]
                     phi = np.r_[np.mean(seg.geom[nowInd, 1] - seg.geom[nowInd, 3]), dummyAng]
+                    if phi[0]<0: phi[0]=phi[0]+360 # GRASP likes interval [0,360] not [-180,180]; note 2nd element only exist if AOD included & then it's dummyAng=0 so no need to check
                     radiance = max(np.mean(seg.rflct[nowInd,l])*mu, measLwrBnd) # MODIS R=L/FO*pi/mu0; GRASP R=L/FO*pi w/ R>1e-6                      
                     aodAEROinpt =  [] if np.isnan(aodAEROinpt) else max(aodAEROinpt, measLwrBnd)
                     nowPix.addMeas(wl, msTyp, np.repeat(1, nip), sza, thtv, phi, np.r_[radiance, aodAEROinpt])
@@ -171,6 +189,8 @@ class modaeroDB(object):
                 gObj.AUX_dict.append({'aodAERO':aodAERO, 'lambdaDT':self.MOD_AOD_LAMDA, 'aodDT':aodDT,
                                       'lambdaDB':self.DB_AOD_LAMDA, 'aodDB':aodDB, 'metaData':metaData, 'AEROloc':aero_loc})
             graspObjs.append(gObj)
+        totPix = np.sum(len(gr.pixels) for gr in graspObjs)
+        print('Returning %d segments for a total of %d pixels' % (len(graspObjs), totPix))
         return graspObjs
             
     def saveData(self, filePath): # only saves data after readDir and sortData, grouped data is not inlcuded
@@ -180,6 +200,7 @@ class modaeroDB(object):
         np.savez_compressed(filePath, rflct=self.rflct, aod=self.aod, mod_loc=self.mod_loc,
                             aero_loc=self.aero_loc, geom=self.geom, set_hash=self.SET_HASH, metaData=self.metaData,
                             sort=self.sorted, modDT_aod=self.modDT_aod, modDB_aod=self.modDB_aod, surfType=self.surfType)
+        print('Saved text file collocation data to %s.' % filePath)
         return True
         
     def loadData(self, filePath):
