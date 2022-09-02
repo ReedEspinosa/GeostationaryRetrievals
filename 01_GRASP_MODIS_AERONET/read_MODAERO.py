@@ -156,7 +156,7 @@ class modaeroDB(object):
             lambdaUsed = np.r_[0:5]
         for seg in self.siteSegment:
             gObj = graspRun(pathYAML, orbHghtKM, dirGRASP, releaseYAML=releaseYAML)
-            gObj.AUX_dict = []
+            gObj.AUX_dict = [] # NOTE: Reed's not sure where/if this is used, but 'metaData' = [GLINT_ANG, WIND_SPEED] is incongruent w/ rslts convention
             unqDTs = np.unique(seg.mod_loc[:,-1])
 #             unqDTs = np.unique(seg.mod_loc[:,-1])[0:3] # HACK001 [1/2] – make run faster
             if self.verbose: print('Packing segment at AERONET siteID=%d with %d pixels' % (seg.aero_loc[0], len(unqDTs)))

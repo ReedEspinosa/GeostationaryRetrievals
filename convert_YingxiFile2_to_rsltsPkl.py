@@ -48,7 +48,33 @@ waveAzmIndRad = AzmWvlVals2Ind(waveAzmValsRad, azms, wvls)
 waveAzmIndSca = AzmWvlVals2Ind(waveAzmValsSca, azms, wvls)
 
 #indDict['latitude', 'longitude',...] then for each of these keys we add item in rslts[n][key]
-# spectral and lambda dependent quantities might be best using the method above
+# we need to code to run through colNames and swap all these to int key dicts (e.g., {3:'longitude', 4:'latitude',...})
+fl2ToRsltScalar = {
+    'longitude':'Latitude(Degrees)',
+    'latitude':'Longitude(Degrees)',
+    'masl':'Elevation(m)',
+    'sph':'Sphericity_Factor(%)',
+    }
+
+fl2ToRsltSpectral = {
+    'aod':'AOD_Extinction-Total',
+    'ssa':'Single_Scattering_Albedo', # this will need to be repeated Nmode times
+    'g':'Asymmetry_Factor-Total',
+    'n':'Refractive_Index-Real_Part',
+    'k':'Refractive_Index-Imaginary_Part',
+    'LidarRatio':'Lidar_Ratio',
+    'LidarDepol':'Depolarization_Ratio',
+    }
+    
+fl2ToRsltMode = {
+    'vol':'VolC-',
+    'rEffMode':'REff-',
+    'rv':'VMR-',
+    'sigma':'Std-',
+    }
+
+# Need two more: one for anlges and one for radii
+
 
 csvData = np.genfromtxt(csvFileIn, delimiter=',', skip_header=1)
 rslts = []
