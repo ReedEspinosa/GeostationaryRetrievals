@@ -6,15 +6,15 @@
 # rslts keys generally match convention for ABI; AERONET data keys appended with "_sky"
 #   Although in some cases ABI does not match convention either (e.g., "_land" or "_ocean")
 
-# TODO: Confirm ABI wavelengths with Yingxi
 # TODO: We need to include ABI angles too... Are they scalars? Either way, arrays needed in rslts dicts
-# TODO: Read in the Dark Target products
+# TODO: Read in the Dark Target L2 products
 # TODO: add an additional csv2rsltPSD for radii dependent variables
 
 
 import numpy as np
 import pickle
 import re
+from datetime import datetime
 from os import path
 
 # Path to CSV file for conversions
@@ -29,8 +29,8 @@ radPtrn_landABI = re.compile('refl([0-9]+)')
 radPtrn_landStdABI = re.compile('refstdl([0-9]+)')
 radPtrn_oceanABI = re.compile('refo([0-9]+)')
 radPtrn_oceanStdABI = re.compile('refstdo([0-9]+)')
-waveLand_ABI = [0.47, 0.64, 2.2] # NEEDS YINGXI's CONFIRMATION
-waveOcean_ABI = [0.47, 0.55, 0.64, 0.86, 1.37, 1.6, 2.2] # NEEDS YINGXI's CONFIRMATION
+waveLand_ABI = [0.47, 0.64, 2.25] # YINGXI: refl0, refl1, refl2 correspond to 0.48, 0.67, 2.25 μm [0.64 is in NOAA's ABI bands table]
+waveOcean_ABI = [0.47, 0.55, 0.64, 0.86, 1.37, 1.6, 2.25] # YINGXI: refo0, refo1, refo2, refo3, refo4, refo5, refo6 correspond to 0.470, 0.550, 0.640, 0.860, 1.2, 1.6, 2.25 μm
 atolWave = 0.01 # wavelength difference ≤10 nm will be considered negligible
 
 ## Mapping of CSV headers to rslt dict keys (csv2rsltsX have form {rsltKey:CSV_HEADER_STRING}) ##
@@ -49,7 +49,7 @@ csv2rsltScalar = { # CSV headers found only once with for scalar (numeric) value
     'sza_sky':'Solar_Zenith_Angle(Degrees)',
     }
 
-csv2rsltSpectral = { # CSV header format: "Lidar_Ratio[440nm]"
+csv2rsltSpectral = { # CSV header format: "Lidar_Ratio[440nm]" ALL ARE SCALED BY 1e-3 BELOW (nm -> μm)
     'aod':'AOD_Extinction-Total\[([0-9]+)nm\]', # TODO: Should aod from AERONET should be called aod_sky? Or aod_dt?
     'ssa':'Single_Scattering_Albedo\[([0-9]+)nm\]', # ssaMode would need to be repeated Nmode times...
     'g':'Asymmetry_Factor-Total\[([0-9]+)nm\]',
@@ -69,11 +69,13 @@ csv2rsltMode = {# CSV header format: "VolC-F"
 
 ## Function and Variable Definitions ##
 def poorMansAvg(trgt, val):
+    if np.isnan(val): return trgt
     if np.isnan(trgt) or np.isclose(trgt,val): return val
     return (trgt + val)/2
 
-def AzmWvlVals2Ind(waveAzmVals, wvls, azms=None):
-    # waveAzmVals should be list with [i_column, wavelength (μm), scattering_angle (deg)]
+def AzmWvlVals2Ind(waveAzmVals, wvls, azms=None): # LOOK HERE, ARE THESE REALY AZMS?
+    # waveAzmVals should be array with [i_column, wavelength (μm), scattering_angle (deg)]
+    waveAzmVals = np.asarray(waveAzmVals)
     waveAzmInd = np.empty(waveAzmVals.shape, dtype=np.uint16) # will only break if more than 64k columns in CSV file...
     for i,triplet in enumerate(waveAzmVals):
         wvlInd, = np.isclose(wvls, triplet[1], atol=atolWave).nonzero()
@@ -84,10 +86,19 @@ def AzmWvlVals2Ind(waveAzmVals, wvls, azms=None):
         waveAzmInd[i, :] = [triplet[0], wvlInd[0]] if azms is None else [triplet[0], wvlInd[0], azmInd[0]]
     return waveAzmInd
 
+def uniqueTOatol(fullList, atol=0.005):
+    unqList = []
+    for el in fullList:
+        if not np.isclose(el, unqList, atol=atol).any():
+            unqList.append(el)
+    unqList = np.asarray(unqList, dtype=np.asarray(fullList).dtype)
+    return np.sort(unqList)
+    
 
 ## Parse Header Row ##
 with open(csvFileIn) as lines:
     colNames = lines.readline().rstrip().split(',')
+colNames = np.asarray(colNames)
 
 # parse sky-scan data first (valid wavelengths are determined here)
 waveAzmValsRad = []; waveAzmValsSca = []
@@ -101,29 +112,43 @@ for i,cn in enumerate(colNames):
         waveAzmValsSca.append([i, mtch.group(1), mtch.group(2)])
     mtch = radPtrn_landABI.match(cn) # ABI land radiances
     if mtch is not None:
-        waveValsRadLandABI.append([i, mtch.group(1)])
+        wvlVal = waveLand_ABI[int(mtch.group(1))]
+        waveValsRadLandABI.append([i, wvlVal])
     mtch = radPtrn_landStdABI.match(cn) # ABI land radiances STD
     if mtch is not None:
-        waveValsStdLandABI.append([i, mtch.group(1)])
+        wvlVal = waveLand_ABI[int(mtch.group(1))]
+        waveValsStdLandABI.append([i, wvlVal])
     mtch = radPtrn_oceanABI.match(cn) # ABI ocean radiances
     if mtch is not None:
-        waveValsRadOceanABI.append([i, mtch.group(1)])
+        wvlVal = waveOcean_ABI[int(mtch.group(1))]
+        waveValsRadOceanABI.append([i, wvlVal])
     mtch = radPtrn_oceanStdABI.match(cn) # ABI ocean radiances STD
     if mtch is not None:
-        waveValsStdOceanABI.append([i, mtch.group(1)])
+        wvlVal = waveOcean_ABI[int(mtch.group(1))]
+        waveValsStdOceanABI.append([i, wvlVal])
 
-waveAzmValsRad = np.asarray(waveAzmValsRad, dtype=np.float64) # N_angles x 3; rows are: [i_column, wavelength (nm), azimuth_angle (deg)]
-waveAzmValsRad[:,1] = waveAzmValsRad[:,1]/1e3 # Convert nm to μm; [i_column, wavelength (μm), azimuth_angle (deg)]
-waveAzmValsSca = np.asarray(waveAzmValsSca, dtype=np.float32) # N_angles x 3; rows are: [i_column, wavelength (nm), scattering_angle (deg)]
-waveAzmValsSca[:,1] = waveAzmValsSca[:,1]/1e3 # Convert nm to μm; [i_column, wavelength (μm), scattering_angle (deg)]
+def frmtWaveAzmVals(waveAzmVals, nm=False):
+    waveAzmVals = np.asarray(waveAzmVals, dtype=np.float32) # N_angles x 3; rows are: [i_column, wavelength (nm), azimuth_angle* (deg)]
+    if nm: waveAzmVals[:,1] = waveAzmVals[:,1]/1e3 # Convert nm to μm; [i_column, wavelength (μm), azimuth_angle* (deg)]
+    return waveAzmVals
+
+waveAzmValsRad = frmtWaveAzmVals(waveAzmValsRad, nm=True)
+waveAzmValsSca = frmtWaveAzmVals(waveAzmValsSca, nm=True)
+waveValsRadLandABI = frmtWaveAzmVals(waveValsRadLandABI)
+waveValsStdLandABI = frmtWaveAzmVals(waveValsStdLandABI)
+waveValsRadOceanABI = frmtWaveAzmVals(waveValsRadOceanABI)
+waveValsStdOceanABI = frmtWaveAzmVals(waveValsStdOceanABI)
+
 
 # define the set of valid wavelengths and sky-scan azimuth angles
 azms_sky = np.unique(waveAzmValsRad[:,2])
-assert np.all(azms_sky==np.unique(waveAzmValsSca[:,2])), 'The relative azimuths for AERONET radiance and scattering angle data do not match!'
-wvls = np.unique(waveAzmValsRad[:,1])
-assert np.all(wvls==np.unique(waveAzmValsSca[:,1])), 'The wavelengths for AERONET radiance and scattering angle data do not match!'
+assert np.all(np.isclose(azms_sky, np.unique(waveAzmValsSca[:,2]))), 'The relative azimuths for AERONET radiance and scattering angle data do not match!'
+wvls = uniqueTOatol(waveAzmValsRad[:,1], atolWave)
+wvlsSca = uniqueTOatol(waveAzmValsSca[:,1], atolWave)
+assert np.all(np.isclose(wvls, wvlsSca)), 'The wavelengths for AERONET radiance and scattering angle data do not match!'
 for wvl in (waveLand_ABI + waveOcean_ABI): # Note this is list concatenation, not addition
-    if not np.isclose(wvl, wvls, atol=atolWave).any(): wvls = np.r_[wvls, wvl]
+    if not np.isclose(wvl, wvls, atol=atolWave).any(): 
+        wvls = np.r_[wvls, wvl]
 wvls = np.sort(wvls)
 
 # match CSV columns with wavelengths and angles
@@ -144,7 +169,7 @@ for i,cn in enumerate(colNames):
     for key,regEx in csv2rsltSpectral.items():
         regMtch = re.match(regEx, cn)
         if regMtch is not None:
-            wvlsInd, = np.nonzero(wvls==int(regMtch.group(1)))
+            wvlsInd, = np.nonzero(np.isclose(wvls, float(regMtch.group(1))/1e3, atol=atolWave)) # these are all in nm, thus /1e3
             assert len(wvlsInd)==1, 'Error matching %s with expected wavelengths!' % cn
             indDictSpctrl[i] = (key, wvlsInd[0]) # indDictSpctrl[i_column] = (rsltKey, wvls_ind)
     for key,regEx in csv2rsltMode.items():
@@ -154,9 +179,9 @@ for i,cn in enumerate(colNames):
 
 # find location of misc. special format columns
 spcInd = dict()
-spcInd['time'] = np.nonzero(colNames[0]=='times')[0]
-spcInd['siteName'] = np.nonzero(colNames[0]=='AERONET_Site')[0]
-spcInd['abifile'] = np.nonzero(colNames[0]=='abifile')[0]
+spcInd['time'] = np.nonzero(colNames == 'times')[0]
+spcInd['siteName'] = np.nonzero(colNames == 'AERONET_Site')[0]
+spcInd['abifile'] = np.nonzero(colNames == 'abifile')[0]
 for key,vals in spcInd.items():
     assert len(vals)==1, 'Error deteremining %s column while parsing CSV header row!' % key 
 
@@ -167,18 +192,19 @@ csvStrData = np.genfromtxt(csvFileIn, delimiter=',', skip_header=1, usecols=strC
 csvNumData = np.genfromtxt(csvFileIn, delimiter=',', skip_header=1) # csvNumData[Nrows, NColumnsTotal]
 rslts = []
 dispString = '%07d/%07d rows processed' # len is 30 characters
-print(dispString % (0,len(csvNumData)))
+print(dispString % (0,len(csvNumData)), end='')
 for i,(numRow, strRow) in enumerate(zip(csvNumData, csvStrData)): # loop over rows of CSV file; numRow[NColumns]
-    if np.mod(i,2)==0: print('\b'*30 + (dispString % (i, len(csvNumData)))) 
+    if np.mod(i,2)==0 or i==len(csvStrData)-1: 
+        print('\b'*30 + (dispString % ((i+1), len(csvNumData))), end='') 
     rslts.append({
         'lambda':wvls,
         'fis_sky':np.tile(azms_sky, [len(wvls),1]).T,
         'meas_I_sky':np.full((len(azms_sky), len(wvls)), np.nan),
-        'meas_I_land':np.full((len(wvls)), np.nan),
-        'meas_I_ocean':np.full((len(wvls)), np.nan),
-        'meas_I_landStd':np.full((len(wvls)), np.nan),
-        'meas_I_oceanStd':np.full((len(wvls)), np.nan),
         'sca_ang_sky':np.full((len(azms_sky), len(wvls)), np.nan),
+        'meas_I_land':np.full((1, len(wvls)), np.nan), # we want Nang x Nwvls dims, but Nang=1 for ABI
+        'meas_I_ocean':np.full((1, len(wvls)), np.nan),
+        'meas_I_landStd':np.full((1, len(wvls)), np.nan),
+        'meas_I_oceanStd':np.full((1, len(wvls)), np.nan),
         })
     for jStr, key in enumerate(indDictStr.values()): # jStr is column in csvStrData of rslt[key]; Python 3.7+ => dict iteration order guaranteed to be in order of insertion
         if key == 'datetime':
@@ -187,7 +213,6 @@ for i,(numRow, strRow) in enumerate(zip(csvNumData, csvStrData)): # loop over ro
             rslts[-1]['ABI_fileName'] = path.basename(strRow[jStr])
         else:
             rslts[-1][key] = strRow[jStr]
-    datetime.strptime(ts, '%Y-%m-%d %H:%M:%S')
     for triplet in waveAzmIndRad: # triplet[i_column, wvls_ind, azms_ind] for a given radiance value
         newVal = poorMansAvg(rslts[-1]['meas_I_sky'][triplet[2], triplet[1]], numRow[triplet[0]])
         rslts[-1]['meas_I_sky'][triplet[2], triplet[1]] = newVal
@@ -195,11 +220,11 @@ for i,(numRow, strRow) in enumerate(zip(csvNumData, csvStrData)): # loop over ro
         newVal = poorMansAvg(rslts[-1]['sca_ang_sky'][triplet[2], triplet[1]], np.abs(numRow[triplet[0]])) # absolute values to eliminate negative scattering angles
         rslts[-1]['sca_ang_sky'][triplet[2], triplet[1]] = newVal
     for pair, pairStd in zip(waveAzmIndRadOceanABI, waveAzmIndStdOceanABI): # pair[i_column, wvls_ind] for a given ABI OCEAN radiance value
-        rslts[-1]['meas_I_ocean'][pair[1]] = numRow[pair[0]]
-        rslts[-1]['meas_I_oceanStd'][pairStd[1]] = numRow[pairStd[0]]
+        rslts[-1]['meas_I_ocean'][0, pair[1]] = numRow[pair[0]]
+        rslts[-1]['meas_I_oceanStd'][0, pairStd[1]] = numRow[pairStd[0]]
     for pair, pairStd in zip(waveAzmIndRadLandABI, waveAzmIndStdLandABI): # pair[i_column, wvls_ind] for a given ABI LAND radiance value
-        rslts[-1]['meas_I_land'][pair[1]] = numRow[pair[0]]
-        rslts[-1]['meas_I_landStd'][pairStd[1]] = numRow[pairStd[0]]
+        rslts[-1]['meas_I_land'][0, pair[1]] = numRow[pair[0]]
+        rslts[-1]['meas_I_landStd'][0, pairStd[1]] = numRow[pairStd[0]]
     for csvInd,rsltKey in indDictScalar.items():
         rslts[-1][rsltKey] = numRow[csvInd]
     for csvInd, keyIndTuple in indDictSpctrl.items(): # keyIndTuple = (rsltKey, wvls_ind)
@@ -210,7 +235,7 @@ for i,(numRow, strRow) in enumerate(zip(csvNumData, csvStrData)): # loop over ro
         if keyIndTuple[0] not in rslts[-1]: # allocate the keyIndTuple[0] array first...
             rslts[-1][keyIndTuple[0]] = np.full(2, np.nan, dtype=np.float64) # wavelengths may be unset so NANs needed
         rslts[-1][keyIndTuple[0]][keyIndTuple[1]] = numRow[csvInd]
-
+print('')
 pklFileOut = csvFileIn[:-3]+'pkl'
 with open(pklFileOut, 'wb') as f:
     pickle.dump(rslts, f, pickle.HIGHEST_PROTOCOL)
