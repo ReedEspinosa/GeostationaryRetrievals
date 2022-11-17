@@ -6,8 +6,8 @@
 # rslts keys generally match convention for ABI; AERONET data keys appended with "_sky"
 #   Although in some cases ABI does not match convention either (e.g., "_land" or "_ocean")
 
-# TODO: We need to include ABI angles too... Are they scalars? Either way, arrays needed in rslts dicts
-# TODO: Read in the Dark Target L2 products
+
+# TODO: Read in the Dark Target L2 products – not clear that these data are in the files...
 # TODO: add an additional csv2rsltPSD for radii dependent variables
 
 
@@ -38,6 +38,7 @@ csv2rsltStr = { # CSV headers found only once with for string values
     'datetime':'times', # 'datetime' is baked in below, careful with changes
     'AERO_siteName':'AERONET_Site',
     'ABI_fileName':'abifile' # 'ABI_fileName' is baked in below, careful with changes
+
     }
 
 csv2rsltScalar = { # CSV headers found only once with for scalar (numeric) values
@@ -47,6 +48,17 @@ csv2rsltScalar = { # CSV headers found only once with for scalar (numeric) value
     'sph':'Sphericity_Factor(%)',
     'AERO_siteID':'Instrument_Number',
     'sza_sky':'Solar_Zenith_Angle(Degrees)',
+    'windSpeed':'wind',
+    'sca_ang_o':'scato',
+    'vfis_o':'vaao',
+    'vis_o':'vzao',
+    'sfis_o':'saao',
+    'sza_o':'szao'
+    'sca_ang_l':'scatl',
+    'vfis_l':'vaal',
+    'vis_l':'vzal',
+    'sfis_l':'saal',
+    'sza_l':'szal'
     }
 
 csv2rsltSpectral = { # CSV header format: "Lidar_Ratio[440nm]" ALL ARE SCALED BY 1e-3 BELOW (nm -> μm)
@@ -66,8 +78,14 @@ csv2rsltMode = {# CSV header format: "VolC-F"
     'sigma':'Std-([FC])',
     }
 
+angleKeys = ['sca_ang','fis','vis','sza']
 
 ## Function and Variable Definitions ##
+def abs2relAzimuths(SolAzm, SenAzm)
+    phi = SolAzm - SenAzm
+    if phi[0]<0: phi[0]=phi[0]+360 # GRASP likes interval [0,360] not [-180,180]; TODO: need to double check if this is true
+    return phi
+
 def poorMansAvg(trgt, val):
     if np.isnan(val): return trgt
     if np.isnan(trgt) or np.isclose(trgt,val): return val
@@ -163,7 +181,7 @@ waveAzmIndStdOceanABI = AzmWvlVals2Ind(waveValsStdOceanABI, wvls) # N_wvls x 2; 
 indDictScalar = {}; indDictStr = {}; indDictSpctrl = {}; indDictMode = {}
 for i,cn in enumerate(colNames):
     for key,value in csv2rsltScalar.items():
-        if cn==value: indDictScalar[i]=key # indDictScalar[i_column] = rsltKey; i.e., csv file column i corresponds to rslts[key] 
+        if cn==value: indDictScalar[i]=key # indDictScalar[i_column] = rsltKey; i.e., csv file column i corresponds to rslts[key]
     for key,value in csv2rsltStr.items():
         if cn==value: indDictStr[i]=key # indDictStr[i_column] = rsltKey; i.e., csv file column i corresponds to rslts[key] 
     for key,regEx in csv2rsltSpectral.items():
@@ -235,6 +253,20 @@ for i,(numRow, strRow) in enumerate(zip(csvNumData, csvStrData)): # loop over ro
         if keyIndTuple[0] not in rslts[-1]: # allocate the keyIndTuple[0] array first...
             rslts[-1][keyIndTuple[0]] = np.full(2, np.nan, dtype=np.float64) # wavelengths may be unset so NANs needed
         rslts[-1][keyIndTuple[0]][keyIndTuple[1]] = numRow[csvInd]
+    if 'sfis_o' in rslts[-1] and 'vfis_o' in rslts[-1] and 'sfis_l' in rslts[-1] and 'vfis_l' in rslts[-1]: # convert ABI's absolute azimuth angles to a single relative azimuth
+        sfis = poorMansAvg(rslts[-1]['sfis_o'], rslts[-1]['sfis_l']) 
+        vfis = poorMansAvg(rslts[-1]['vfis_o'], rslts[-1]['vfis_l'])
+        rslts[-1]['phi'] = abs2relAzimuths(sfis, vfis)
+        del rslts[-1]['sfis_o']; del rslts[-1]['vfis_o']
+        del rslts[-1]['sfis_l']; del rslts[-1]['vfis_l'] 
+    for aKey in angleKeys:
+        if akey+'_o' in rslts[-1] and akey+'_l' in rslts[-1]: 
+            rslts[-1][aKey] = poorMansAvg(rslts[-1][akey+'_o'], rslts[-1][akey+'_l']) 
+            del rslts[-1][akey+'_o']; del rslts[-1][akey+'_l']
+        elif akey != 'phi': # if we do not have some value (incld. nan) for both land and ocean we give up and report nan
+            rslts[-1][aKey] = np.nan
+        rslts[-1][aKey] = np.full((1,len(wvl)), rslts[-1][aKey], dtype=np.float64) # repeat into (N_views, N_lambda) shaped array, w/ N_views_ABI=1 
+        
 print('')
 pklFileOut = csvFileIn[:-3]+'pkl'
 with open(pklFileOut, 'wb') as f:
