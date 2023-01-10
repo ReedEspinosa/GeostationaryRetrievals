@@ -18,7 +18,8 @@ from datetime import datetime
 from os import path
 
 # Path to CSV file for conversions
-csvFileIn = '/Users/wrespino/Synced/RST_CAN-GRASP/AERONET_collocation/ABI16_ALM_TestFiles/ABI16_ALM_5lines_V1.csv'
+# csvFileIn = '/Users/wrespino/Synced/RST_CAN-GRASP/AERONET_collocation/ABI16_ALM_TestFiles/ABI16_ALM_5lines_V1.csv'
+csvFileIn = '/Users/wrespino/Synced/RST_CAN-GRASP/AERONET_collocation/ABI16/ABI16_ALM.csv'
 
 ## Patterns for AERONET measurement data ##
 radPtrn_sky = re.compile('([0-9]+)_Radiance_for_Azimuth_Angle_in_Degrees\(uW/cm\^2/sr/nm\)[ \-]+([\-0-9]+\.[0-9]+)') # TD: Do we need both "-" toward end of match?
@@ -53,7 +54,7 @@ csv2rsltScalar = { # CSV headers found only once with for scalar (numeric) value
     'vfis_o':'vaao',
     'vis_o':'vzao',
     'sfis_o':'saao',
-    'sza_o':'szao'
+    'sza_o':'szao',
     'sca_ang_l':'scatl',
     'vfis_l':'vaal',
     'vis_l':'vzal',
@@ -81,9 +82,9 @@ csv2rsltMode = {# CSV header format: "VolC-F"
 angleKeys = ['sca_ang','fis','vis','sza']
 
 ## Function and Variable Definitions ##
-def abs2relAzimuths(SolAzm, SenAzm)
+def abs2relAzimuths(SolAzm, SenAzm):
     phi = SolAzm - SenAzm
-    if phi[0]<0: phi[0]=phi[0]+360 # GRASP likes interval [0,360] not [-180,180]; TODO: need to double check if this is true
+    if phi<0: phi=phi+360 # GRASP likes interval [0,360] not [-180,180]; TODO: need to double check if this is true
     return phi
 
 def poorMansAvg(trgt, val):
@@ -112,8 +113,10 @@ def uniqueTOatol(fullList, atol=0.005):
     unqList = np.asarray(unqList, dtype=np.asarray(fullList).dtype)
     return np.sort(unqList)
     
+print('Working from ' + csvFileIn)
 
 ## Parse Header Row ##
+print('Reading and parsing columns in CSV header row...')
 with open(csvFileIn) as lines:
     colNames = lines.readline().rstrip().split(',')
 colNames = np.asarray(colNames)
@@ -206,10 +209,13 @@ for key,vals in spcInd.items():
 ## Loop Over All Data Rows ##
 #  parse both string and numerical data and create list of rslt dicts
 strColumnInds = tuple(colInd for colInd in indDictStr.keys()) # Python 3.7+ => dict iteration order guaranteed to be in order of insertion
+print('Reading in CSV text data as strings...')
 csvStrData = np.genfromtxt(csvFileIn, delimiter=',', skip_header=1, usecols=strColumnInds, dtype=str) # csvStrData[Nrows, len(csv2rsltStr)]
+print('Reading in CSV numerical data...')
 csvNumData = np.genfromtxt(csvFileIn, delimiter=',', skip_header=1) # csvNumData[Nrows, NColumnsTotal]
 rslts = []
 dispString = '%07d/%07d rows processed' # len is 30 characters
+print('Parsing numerical and string data that was read to memory...')
 print(dispString % (0,len(csvNumData)), end='')
 for i,(numRow, strRow) in enumerate(zip(csvNumData, csvStrData)): # loop over rows of CSV file; numRow[NColumns]
     if np.mod(i,2)==0 or i==len(csvStrData)-1: 
@@ -256,16 +262,16 @@ for i,(numRow, strRow) in enumerate(zip(csvNumData, csvStrData)): # loop over ro
     if 'sfis_o' in rslts[-1] and 'vfis_o' in rslts[-1] and 'sfis_l' in rslts[-1] and 'vfis_l' in rslts[-1]: # convert ABI's absolute azimuth angles to a single relative azimuth
         sfis = poorMansAvg(rslts[-1]['sfis_o'], rslts[-1]['sfis_l']) 
         vfis = poorMansAvg(rslts[-1]['vfis_o'], rslts[-1]['vfis_l'])
-        rslts[-1]['phi'] = abs2relAzimuths(sfis, vfis)
+        rslts[-1]['fis'] = abs2relAzimuths(sfis, vfis)
         del rslts[-1]['sfis_o']; del rslts[-1]['vfis_o']
         del rslts[-1]['sfis_l']; del rslts[-1]['vfis_l'] 
     for aKey in angleKeys:
-        if akey+'_o' in rslts[-1] and akey+'_l' in rslts[-1]: 
-            rslts[-1][aKey] = poorMansAvg(rslts[-1][akey+'_o'], rslts[-1][akey+'_l']) 
-            del rslts[-1][akey+'_o']; del rslts[-1][akey+'_l']
-        elif akey != 'phi': # if we do not have some value (incld. nan) for both land and ocean we give up and report nan
+        if aKey+'_o' in rslts[-1] and aKey+'_l' in rslts[-1]: 
+            rslts[-1][aKey] = poorMansAvg(rslts[-1][aKey+'_o'], rslts[-1][aKey+'_l']) 
+            del rslts[-1][aKey+'_o']; del rslts[-1][aKey+'_l']
+        elif aKey != 'fis': # if we do not have some value (incld. nan) for both land and ocean we give up and report nan
             rslts[-1][aKey] = np.nan
-        rslts[-1][aKey] = np.full((1,len(wvl)), rslts[-1][aKey], dtype=np.float64) # repeat into (N_views, N_lambda) shaped array, w/ N_views_ABI=1 
+        rslts[-1][aKey] = np.full((1, len(wvls)), rslts[-1][aKey], dtype=np.float64) # repeat into (N_views, N_lambda) shaped array, w/ N_views_ABI=1 
         
 print('')
 pklFileOut = csvFileIn[:-3]+'pkl'
