@@ -10,8 +10,8 @@ sys.path.append("/Users/wrespino/Synced/Local_Code_MacBook/GSFC-GRASP-Python-Int
 from runGRASP import graspDB, graspRun, pixel
 
 # paths
-pklInputPath = '/Users/wrespino/Synced/RST_CAN-GRASP/AERONET_collocation/ABI16_ALM_TestFiles/ABI16_ALM_5lines_V1.pkl'
-# pklInputPath = '/Users/wrespino/Synced/RST_CAN-GRASP/AERONET_collocation/ABI16/ABI16_ALM.pkl'
+# pklInputPath = '/Users/wrespino/Synced/RST_CAN-GRASP/AERONET_collocation/ABI16_ALM_TestFiles/ABI16_ALM_5lines_V1.pkl'
+pklInputPath = '/Users/wrespino/Synced/RST_CAN-GRASP/AERONET_collocation/ABI16/ABI16_ALM.pkl'
 # pklInputPath = '/Users/wrespino/Synced/RST_CAN-GRASP/AERONET_collocation/ABI17/ABI17_ALM.pkl'
 
 maxT = 60 # The maximum number of pixels to pack together in a single run of GRASP
@@ -41,11 +41,19 @@ def packPixel(rs, surf='ocean'):
 
 print('Sorting rslts by observations datetime...')
 rslts = rslts[np.argsort([r['datetime'] for r in rslts])]
+print('Converting AERONET SITE IDs to np.int64...')
+for rs in rslts: rs['AERO_siteID'] = np.int64(rs['AERO_siteID'])
 print('Looping over all AERONET sites...')
+dispString = 'Packing %5d pixels at %26s' # len is 45 characters
+print(dispString % (0,''), end='')
 grObjs = []
-grInd = {'ocean':-1, 'land':-1}
 for siteID in np.unique([r['AERO_siteID'] for r in rslts]):
-    matchingRsltsInds = [r['AERO_siteID']==siteID for r in rslts] 
+    # TODO: Switch from AERO_siteID to AERO_siteName, as former seems scrambled for some cases (e.g., ~11th siteID of ABI16)
+    # TODO: Add assert statement checking that all lat/lons within a single site are within ~1°
+    matchingRsltsInds = [r['AERO_siteID']==siteID for r in rslts]
+    siteName = rslts[matchingRsltsInds][0]['AERO_siteName']
+    print('\b'*50 + (dispString % (sum(matchingRsltsInds), siteName)), end='', flush=True)
+    grInd = {'ocean':-1, 'land':-1} # trigger creation of new GRASP run specific to this site
     for rslt in rslts[matchingRsltsInds]:
         for surfType in ['ocean', 'land']:
             surfPix = packPixel(rslt, surfType)
