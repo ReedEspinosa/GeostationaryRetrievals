@@ -1,39 +1,51 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# TODO: This seems to be working okay so far but 0.47 land and ocean radiances are suspiciously close for first few pixels
+# TODO: Printing is scrambled – "working in" appears beside the corresponding "packing XXX pixels"
+#           This comes from the creation of the runGRASP object and could actually be a feature with some cleanup...
+
+# TODO: GRASP v1.1.2 will not take three lognormal modes and merging from way back is not trivial
+
+# TODO: auto adjust YAML breaks with blue noise by itself (see GitHub issue #6 in GRASP-Python-interface repo)
+
 
 import sys
 from os import path
 import numpy as np
 sys.path.append("/Users/wrespino/Synced/Local_Code_MacBook/GSFC-GRASP-Python-Interface")
+sys.path.append("/Users/wrespino/Synced/Local_Code_MacBook/GSFC-Retrieval-Simulators")
 from runGRASP import graspDB, graspRun, pixel
+from simulateRetrieval import simulation
 
-# paths
+## SCRIPT INPUTS
 # pklInputPath = '/Users/wrespino/Synced/RST_CAN-GRASP/AERONET_collocation/ABI16_ALM_TestFiles/ABI16_ALM_5lines_V1.pkl'
 pklInputPath = '/Users/wrespino/Synced/RST_CAN-GRASP/AERONET_collocation/ABI16/ABI16_ALM.pkl'
 # pklInputPath = '/Users/wrespino/Synced/RST_CAN-GRASP/AERONET_collocation/ABI17/ABI17_ALM.pkl'
 
 # maxPixPerSite = None # ALL Pixels
-maxPixPerSite = 10
+maxPixPerSite = 20
 
-surfTypes = ['ocean', 'land'] # ALL Surfaces
-# surfTypes = ['ocean']
+# surfTypes = ['ocean', 'land'] # ALL Surfaces
+surfTypes = ['ocean']
 
 # siteNames = None # ALL Sites
 siteNames = ['Capo_Verde', 'Cape_San_Juan', 'Dakar_Belair']
 
 maxT = 60 # The maximum number of pixels to pack together in a single run of GRASP
-measLwrBnd = 1e-6 # Minimum measurement values passed to GRASP 
+measLwrBnd = 1e-6 # Minimum measurement values passed to GRASP
 
-# load the data
-gDB_in = graspDB()
-rslts = gDB_in.loadResults(pklInputPath)
-del gDB_in
+# GRASP processing options
+maxCPU = 8
+binPathGRASP = '/Users/wrespino/Synced/Local_Code_MacBook/grasp_open/build/bin/grasp' # TODO: Fill these in with GRASP settings
+krnlPathGRASP = '/Users/wrespino/Synced/Local_Code_MacBook/grasp_open/src/retrieval/internal_files'
+yamlPathGRASP = '/Users/wrespino/Synced/Local_Code_MacBook/MODAERO_Analysis/YAML_files/settings_BCK_GRASPv1.1.2_2lgnrm_Ocean.yml' # easily split into land vs ocean or any other breakdown below ~LN95
+savePath = '/Users/wrespino/Synced/Working/ABI_initialTests/Test_threeSites_Ocean_V02.pkl'
+rndGuess = False
 
-# (1) determine grouping of rslts
-# HINT: We may want to condition siteIDs (i.e. make them integers)
 
+## END INPUTS – Begin Processing
+
+# define functions
 def packPixel(rs, surf='ocean'):
     if np.isnan(rs['meas_I_'+surf]).all(): return None # There was no data for this surface type
     # Create the pixel
@@ -63,8 +75,15 @@ def checkRsltConsistent(rsBase, rsNow, lenDispStr=0):
     print((preStr + frmt + ' || ' + frmt) % (baseTup + nowTup), flush=True)
     return False
 
+# load the data
+print('Loading collocation data from %s' % (path.basename(pklInputPath)))
+gDB_in = graspDB()
+rslts = gDB_in.loadResults(pklInputPath)
+del gDB_in
+
 print('Sorting rslts by observations datetime...')
 rslts = rslts[np.argsort([r['datetime'] for r in rslts])]
+for i in range(len(rslts)): rslts[i]['rsltsID'] = i # add unique rsltIDs to add in tracking later
 print('Looping over all AERONET sites...')
 dispString = 'Packing %5d pixels at %26s' # len is 50 characters
 lenDispStr = 50
@@ -82,9 +101,10 @@ for siteName in siteNames:
         for surfType in surfTypes:
             surfPix = packPixel(rslt, surfType)
             if surfPix is not None:
+                surfPix.pixID = rslt['rsltsID']
                 if grInd[surfType]<0 or len(grObjs[grInd[surfType]].pixels)==maxT:
                     grInd[surfType] = len(grObjs)
-                    grObjs.append(graspRun(verbose=True))
+                    grObjs.append(graspRun(pathYAML=yamlPathGRASP, releaseYAML=True, verbose=True))
                 grObjs[grInd[surfType]].addPix(surfPix)
     if inconsistRslt: print(dispString % (0,''), end='')
 # summarize and sanity check results
@@ -97,7 +117,41 @@ Nocean = sum([grObj.pixels[0].land_prct < 1 for grObj in grObjs])
 Nland = sum([grObj.pixels[0].land_prct > 99 for grObj in grObjs])
 print('%d land runs and %d ocean runs for a total of %d runs packed' % (Nland, Nocean, len(grObjs)))
 
+print('Creating graspDB object and running grasp...', flush=True)
+gDB = graspDB(grObjs)
+simABI = simulation()
+rsltBck, failRun = gDB.processData(maxCPU, binPathGRASP, False, krnlPathGRASP, rndGuess=rndGuess)
+simABI.rsltBck = rsltBck
+print('%d of %d pixels process successfully' % (sum(~failRun), Npix))
+# del gDB # helpful in large scale processing, but not debugging
+simABI.rsltFwd = rslts[~failRun]
+simABI.saveSim(savePath, verbose=True)
 
-# (3) combine (1) and (2) to pack them all into graspRun members of gDB
 
-# (4) save results to a pkl... gDB does not have a method for this (if above is fast we could just run here...)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
