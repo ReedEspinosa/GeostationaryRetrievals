@@ -6,7 +6,6 @@
 # rslts keys generally match convention for ABI; AERONET data keys appended with "_sky"
 #   Although in some cases ABI does not match convention either (e.g., "_land" or "_ocean")
 
-
 # TODO: Read in the Dark Target L2 products – not clear that these data are in the files...
 # TODO: add an additional csv2rsltPSD for radii dependent variables
 

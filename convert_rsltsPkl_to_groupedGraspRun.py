@@ -11,11 +11,8 @@ X may not equal sum of pixels at above sites when script states "Packed X pixels
 """
 
 # TODO: GRASP v1.1.2 will not take three lognormal modes and merging from way back is not trivial
-
 # TODO: auto adjust YAML breaks with blue noise by itself (see GitHub issue #6 in GRASP-Python-interface repo)
-
 # TODO: adjust grouping so that runs are roughly even in size (e.g., 61 pixels does not become runs with 30, 30 & 1 pixels)
-
 
 import sys
 from os import path
@@ -25,7 +22,7 @@ sys.path.append("/Users/wrespino/Synced/Local_Code_MacBook/GSFC-Retrieval-Simula
 from runGRASP import graspDB, graspRun, pixel
 from simulateRetrieval import simulation
 
-## SCRIPT INPUTS
+### SCRIPT INPUTS ###
 # pklInputPath = '/Users/wrespino/Synced/RST_CAN-GRASP/AERONET_collocation/ABI16_ALM_TestFiles/ABI16_ALM_5lines_V1.pkl'
 pklInputPath = '/Users/wrespino/Synced/RST_CAN-GRASP/AERONET_collocation/ABI16/ABI16_ALM.pkl'
 # pklInputPath = '/Users/wrespino/Synced/RST_CAN-GRASP/AERONET_collocation/ABI17/ABI17_ALM.pkl'
@@ -44,14 +41,14 @@ measLwrBnd = 1e-6 # Minimum measurement values passed to GRASP
 
 # GRASP processing options
 maxCPU = 8
-binPathGRASP = '/Users/wrespino/Synced/Local_Code_MacBook/grasp_open/build/bin/grasp' # TODO: Fill these in with GRASP settings
+binPathGRASP = '/Users/wrespino/Synced/Local_Code_MacBook/grasp_open/build/bin/grasp'
 krnlPathGRASP = '/Users/wrespino/Synced/Local_Code_MacBook/grasp_open/src/retrieval/internal_files'
 yamlPathGRASP = '/Users/wrespino/Synced/Local_Code_MacBook/MODAERO_Analysis/YAML_files/settings_BCK_GRASPv1.1.2_2lgnrm_Ocean.yml' # easily split into land vs ocean or any other breakdown below ~LN95
 savePath = '/Users/wrespino/Synced/Working/ABI_initialTests/Test_threeSites_Ocean_V02.pkl'
 rndGuess = False
 showWorkingPath = False # True prints a large amount to console
 
-## END INPUTS – Begin Processing
+### END INPUTS – Begin Processing ###
 
 # define functions
 def packPixel(rs, surf='ocean'):
@@ -63,9 +60,8 @@ def packPixel(rs, surf='ocean'):
     assert np.all(rs['fis']>=0), 'Negative phi detected in MODIS data but GRASP likes phi on the interval [0,360]' # FIXES: (1) comment this line out and accept less accuracy in GRASP RT OR (2) ensure phi<0 => phi=phi+360
     mu = np.cos(rs['sza']*np.pi/180) # [0] needed b/c sza might have dummyAng at end
     rs['meas_I_'+surf] = np.maximum(rs['meas_I_'+surf]*mu, measLwrBnd) # MODIS R=L/FO*pi/mu0; GRASP R=L/FO*pi w/ R>1e-6      
-    # Adjust rs variable names and populate pixel observational data
-    rs['meas_'+surf+'_I'] = rs.pop('meas_I_'+surf) # this is format populateFromRslt() can handle; should have just started with it in convert_YingxiFile2_to_rsltsPkl.py
-    pix.populateFromRslt(rs, dataStage='meas_'+surf)
+    # Populate pixel with observational data
+    pix.populateFromRslt(rs, dataStage='meas', endStr=surf)
     return pix
 
 def checkRsltConsistent(rsBase, rsNow, lenDispStr=0):
@@ -83,8 +79,7 @@ def checkRsltConsistent(rsBase, rsNow, lenDispStr=0):
     print((preStr + frmt + ' || ' + frmt) % (baseTup + nowTup), flush=True)
     return False
 
-# load the data
-print('Loading collocation data from %s' % (path.basename(pklInputPath)))
+print('Loading collocated data from %s' % (path.basename(pklInputPath)))
 gDB_in = graspDB()
 rslts = gDB_in.loadResults(pklInputPath)
 del gDB_in
@@ -92,7 +87,8 @@ del gDB_in
 print('Sorting rslts by observations datetime...')
 rslts = rslts[np.argsort([r['datetime'] for r in rslts])]
 for i in range(len(rslts)): rslts[i]['rsltsID'] = i # add unique rsltIDs to add in tracking later
-print('Looping over all AERONET sites...')
+
+print('Looping over all AERONET sites...') # This is quite fast, so no point in saving results before calling GRASP
 dispString = 'Packing %5d pixels with land and/or ocean data at %26s' # len is 82 characters
 if showWorkingPath:
     lenDispStr = 0
@@ -122,7 +118,8 @@ for siteName in siteNames:
                     grObjs.append(graspRun(pathYAML=yamlPathGRASP, releaseYAML=True, verbose=showWorkingPath))
                 grObjs[grInd[surfType]].addPix(surfPix)
     if inconsistRslt and not showWorkingPath: print(dummyString, end='')
-# summarize and sanity check results
+
+print('Summarizing and sanity checking resulting list of graspRun objects...')
 Npix = sum(len(gr.pixels) for gr in grObjs)
 dispStringMod = dispString.replace('king','ked').replace('and/or', 'or') 
 print('\b'*lenDispStr + dispStringMod % (Npix,('%d sites' % len(siteNames))) + ' '*10) # extra spaces needed to ensure overwrite
@@ -142,6 +139,7 @@ print('%d of %d pixels process successfully' % (sum(~failRun), Npix))
 # del gDB # helpful in large scale processing, but not debugging
 triedPixIDs = [px.pixID for grObj in grObjs for px in grObj.pixels]
 simABI.rsltFwd = rslts[triedPixIDs][~failRun]
+simBase.spectralInterpFwdToBck() # line up fwd with back wavelengths
 simABI.saveSim(savePath, verbose=True)
 
 
