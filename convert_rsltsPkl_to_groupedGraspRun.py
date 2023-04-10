@@ -83,6 +83,10 @@ print('Loading collocated data from %s' % (path.basename(pklInputPath)))
 gDB_in = graspDB()
 rslts = gDB_in.loadResults(pklInputPath)
 del gDB_in
+for var in ['n','k']: # ensure 2D arrays with size 2xNλ for consistency with rslt dict (AERONET retrieve same value for fine/coarse RI)
+    if var in rslts[0] and (rslts[0][var].ndim==1 or rslts[0][var].shape[0]==1):
+        for i, rs in enumerate(rslts):
+            rslts[i][var] = np.tile(rslts[i][var], (2,1))
 
 print('Sorting rslts by observations datetime...')
 rslts = rslts[np.argsort([r['datetime'] for r in rslts])]
