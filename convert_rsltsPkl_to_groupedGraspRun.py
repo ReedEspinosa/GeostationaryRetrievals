@@ -64,7 +64,7 @@ def packPixel(rs, surf='ocean'):
     pix.populateFromRslt(rs, dataStage='meas', endStr=surf)
     return pix
 
-def checkRsltConsistent(rsBase, rsNow, lenDispStr=0):
+def checkRsltConsistent(rsBase, rsNow):
     vld = []
     vld.append(np.isclose(rsBase['latitude'], rsNow['latitude'], atol=0.5))
     vld.append(np.isclose(rsBase['longitude'], rsNow['longitude'], atol=0.5))
@@ -75,9 +75,14 @@ def checkRsltConsistent(rsBase, rsNow, lenDispStr=0):
     frmtKeys = ['AERO_siteName','AERO_siteID','latitude','longitude','masl']
     baseTup = tuple(rsBase[key] for key in frmtKeys)
     nowTup = tuple(rsNow[key] for key in frmtKeys)
-    preStr = '\b'*lenDispStr + 'AERONET site mismatch >> '
-    print((preStr + frmt + ' || ' + frmt) % (baseTup + nowTup), flush=True)
+    print(('AERONET site mismatch >> '+frmt+' || '+frmt) % (baseTup + nowTup))
     return False
+
+def calc_maxTnow(n, maxT):
+    r = 0.5 # r≈0 -> last run often very short; r≈1 -> maxTnow << maxT for many cases
+    while True:
+        if n % maxT == 0 or n % maxT > r*maxT: return maxT
+        maxT -= 1
 
 print('Loading collocated data from %s' % (path.basename(pklInputPath)))
 gDB_in = graspDB()
@@ -94,39 +99,33 @@ for i in range(len(rslts)): rslts[i]['rsltsID'] = i # add unique rsltIDs to add 
 
 print('Looping over all AERONET sites...') # This is quite fast, so no point in saving results before calling GRASP
 dispString = 'Packing %5d pixels with land and/or ocean data at %26s' # len is 82 characters
-if showWorkingPath:
-    lenDispStr = 0
-    lineEnd = '\n'
-else:
-    dummyString = dispString % (0,'')
-    lenDispStr = len(dummyString)
-    lineEnd = ''
-    print(dummyString, end='')
+
 grObjs = []
 if siteNames is None: siteNames = np.unique([r['AERO_siteName'] for r in rslts])
 for siteName in siteNames:
-    mtchRsltInds = [r['AERO_siteName']==siteName for r in rslts]
-    siteName = rslts[mtchRsltInds][0]['AERO_siteName']
-    inconsistRslt = False
-    NpixSite = sum(mtchRsltInds) if maxPixPerSite is None else min(sum(mtchRsltInds), maxPixPerSite)
-    print('\b'*lenDispStr + (dispString % (NpixSite, siteName)), end=lineEnd, flush=True)
+    mtchInds = [r['AERO_siteName']==siteName for r in rslts]
+    NpixSite = sum(mtchInds) if maxPixPerSite is None else min(sum(mtchInds), maxPixPerSite)
+    print(dispString % (NpixSite, siteName))
     grInd = {'ocean':-1, 'land':-1} # trigger creation of new GRASP run specific to this site
-    for rslt in rslts[mtchRsltInds][0:maxPixPerSite]: # better to sub-select here b/c mtchRsltInds is large boolean list
-        inconsistRslt = inconsistRslt or not checkRsltConsistent(rslts[mtchRsltInds][0], rslt, lenDispStr)
+    maxTsite = dict()
+    for surf in surfTypes: 
+        inds = [~np.isnan(rs['meas_I_'+surf]).all() for rs in rslts[mtchInds][0:maxPixPerSite]]
+        maxTsite[surf] = calc_maxTnow(sum(inds), maxT) # this is a bit of an art, see function above
+    for rslt in rslts[mtchInds][0:maxPixPerSite]: # better to sub-select here b/c mtchInds is large boolean list
+        checkRsltConsistent(rslts[mtchInds][0], rslt)
         for surfType in surfTypes:
             surfPix = packPixel(rslt, surfType)
             if surfPix is not None:
                 surfPix.pixID = rslt['rsltsID']
-                if grInd[surfType]<0 or len(grObjs[grInd[surfType]].pixels)==maxT:
+                if grInd[surfType]<0 or len(grObjs[grInd[surfType]].pixels)==maxTsite[surf]:
                     grInd[surfType] = len(grObjs)
                     grObjs.append(graspRun(pathYAML=yamlPathGRASP, releaseYAML=True, verbose=showWorkingPath))
                 grObjs[grInd[surfType]].addPix(surfPix)
-    if inconsistRslt and not showWorkingPath: print(dummyString, end='')
 
 print('Summarizing and sanity checking resulting list of graspRun objects...')
 Npix = sum(len(gr.pixels) for gr in grObjs)
 dispStringMod = dispString.replace('king','ked').replace('and/or', 'or') 
-print('\b'*lenDispStr + dispStringMod % (Npix,('%d sites' % len(siteNames))) + ' '*10) # extra spaces needed to ensure overwrite
+print(dispStringMod % (Npix,('%d sites' % len(siteNames))) + ' '*10) # extra spaces needed to ensure overwrite
 for gr in grObjs:
     for pix in gr.pixels:
         assert np.isclose(gr.pixels[0].land_prct, pix.land_prct, atol=1), 'Land and ocean pixels in same run!'
@@ -139,11 +138,11 @@ gDB = graspDB(grObjs)
 simABI = simulation()
 rsltBck, failRun = gDB.processData(maxCPU, binPathGRASP, False, krnlPathGRASP, rndGuess=rndGuess)
 simABI.rsltBck = rsltBck
-print('%d of %d pixels process successfully' % (sum(~failRun), Npix))
+print('%d of %d pixels processed successfully' % (sum(~failRun), Npix))
 # del gDB # helpful in large scale processing, but not debugging
 triedPixIDs = [px.pixID for grObj in grObjs for px in grObj.pixels]
 simABI.rsltFwd = rslts[triedPixIDs][~failRun]
-simBase.spectralInterpFwdToBck() # line up fwd with back wavelengths
+simABI.spectralInterpFwdToBck() # line up fwd with back wavelengths
 simABI.saveSim(savePath, verbose=True)
 
 
