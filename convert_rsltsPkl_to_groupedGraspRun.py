@@ -12,41 +12,44 @@ X may not equal sum of pixels at above sites when script states "Packed X pixels
 
 # TODO: GRASP v1.1.2 will not take three lognormal modes and merging from way back is not trivial
 # TODO: auto adjust YAML breaks with blue noise by itself (see GitHub issue #6 in GRASP-Python-interface repo)
-# TODO: adjust grouping so that runs are roughly even in size (e.g., 61 pixels does not become runs with 30, 30 & 1 pixels)
 
 import sys
 from os import path
 import numpy as np
-sys.path.append("/Users/wrespino/Synced/Local_Code_MacBook/GSFC-GRASP-Python-Interface")
-sys.path.append("/Users/wrespino/Synced/Local_Code_MacBook/GSFC-Retrieval-Simulators")
+import warnings
+sys.path.append("/discover/nobackup/wrespino/GSFC-GRASP-Python-Interface")
+sys.path.append("/discover/nobackup/wrespino/GSFC-Retrieval-Simulators")
 from runGRASP import graspDB, graspRun, pixel
 from simulateRetrieval import simulation
 
 ### SCRIPT INPUTS ###
-# pklInputPath = '/Users/wrespino/Synced/RST_CAN-GRASP/AERONET_collocation/ABI16_ALM_TestFiles/ABI16_ALM_5lines_V1.pkl'
-pklInputPath = '/Users/wrespino/Synced/RST_CAN-GRASP/AERONET_collocation/ABI16/ABI16_ALM.pkl'
-# pklInputPath = '/Users/wrespino/Synced/RST_CAN-GRASP/AERONET_collocation/ABI17/ABI17_ALM.pkl'
+pklInputPath = '/discover/nobackup/projects/multipix_geo/AERONET_collocation/ABI16/ABI16_ALM.pkl'
 
-# maxPixPerSite = None # ALL Pixels
-maxPixPerSite = 100
+# max[min]PixPerSite = None # ALL Pixels
+maxPixPerSite = 200 # A max of this many land and ocean pixels will be taken at each site (Npixel_land+ocean can be up to 2*maxPixPerSite)
+
+maxPixPerRun = 30 # The maximum number of pixels to pack together in a single run of GRASP
+minPixPerRun = 15 # GRASP runs with fewer than this many pixels will be discarded
 
 # surfTypes = ['ocean', 'land'] # ALL Surfaces
-surfTypes = ['ocean', 'land']
+surfTypes = ['ocean']
 
 # siteNames = None # ALL Sites
-siteNames = ['Capo_Verde', 'Cape_San_Juan', 'Dakar_Belair'] 
+siteNames = ['Capo_Verde', 'Cape_San_Juan', 'Dakar_Belair', 'San_Cristobal_USFQ', 'UCSB', 
+             'Catalina', 'CEILAP-Comodoro', 'Halifax', 'Hampton_University', 'La_Jolla',
+             'Santa_Monica_Colg', 'Teide'] # Full list at bottom of RST Zim Note 
 
-maxT = 30 # The maximum number of pixels to pack together in a single run of GRASP
 measLwrBnd = 1e-6 # Minimum measurement values passed to GRASP
 
 # GRASP processing options
-maxCPU = 8
-binPathGRASP = '/Users/wrespino/Synced/Local_Code_MacBook/grasp_open/build/bin/grasp'
-krnlPathGRASP = '/Users/wrespino/Synced/Local_Code_MacBook/grasp_open/src/retrieval/internal_files'
-yamlPathGRASP = '/Users/wrespino/Synced/Local_Code_MacBook/MODAERO_Analysis/YAML_files/settings_BCK_GRASPv1.1.2_2lgnrm_Ocean.yml' # easily split into land vs ocean or any other breakdown below ~LN95
-savePath = '/Users/wrespino/Synced/Working/ABI_initialTests/Test_threeSites_Ocean_V02.pkl'
+maxCPU = 45 # maximum number of simultaneous instances of GRASP
+binPathGRASP = '/discover/nobackup/wrespino/grasp_open/build/bin/grasp'
+krnlPathGRASP = '/discover/nobackup/wrespino/grasp_open/src/retrieval/internal_files'
+yamlPathGRASP = '/discover/nobackup/wrespino/GeostationaryRetrievals/YAML_files/settings_BCK_GRASPv1.1.2_2lgnrm_Ocean.yml' # easily split into land vs ocean or any other breakdown below ~LN95
+savePath = '/discover/nobackup/projects/multipix_geo/GRASP_results/V0_AERONET-sites_ABI-only/TUNING_oceanSites_maxPerSite200_Ocean_V001.pkl'
 rndGuess = False
-showWorkingPath = False # True prints a large amount to console
+showWorkingPath = True # True prints a large amount to console
+dryRun = False # Pack everything up but do not actually run GRASP
 
 ### END INPUTS – Begin Processing ###
 
@@ -99,7 +102,6 @@ for i in range(len(rslts)): rslts[i]['rsltsID'] = i # add unique rsltIDs to add 
 
 print('Looping over all AERONET sites...') # This is quite fast, so no point in saving results before calling GRASP
 dispString = 'Packing %5d pixels with land and/or ocean data at %26s' # len is 82 characters
-
 grObjs = []
 if siteNames is None: siteNames = np.unique([r['AERO_siteName'] for r in rslts])
 for siteName in siteNames:
@@ -110,7 +112,7 @@ for siteName in siteNames:
     maxTsite = dict()
     for surf in surfTypes: 
         inds = [~np.isnan(rs['meas_I_'+surf]).all() for rs in rslts[mtchInds][0:maxPixPerSite]]
-        maxTsite[surf] = calc_maxTnow(sum(inds), maxT) # this is a bit of an art, see function above
+        maxTsite[surf] = calc_maxTnow(sum(inds), maxPixPerRun) # this is a bit of an art, see function above
     for rslt in rslts[mtchInds][0:maxPixPerSite]: # better to sub-select here b/c mtchInds is large boolean list
         checkRsltConsistent(rslts[mtchInds][0], rslt)
         for surfType in surfTypes:
@@ -121,6 +123,14 @@ for siteName in siteNames:
                     grInd[surfType] = len(grObjs)
                     grObjs.append(graspRun(pathYAML=yamlPathGRASP, releaseYAML=True, verbose=showWorkingPath))
                 grObjs[grInd[surfType]].addPix(surfPix)
+if minPixPerRun is not None:
+    if maxPixPerSite: assert minPixPerRun <= maxPixPerSite, 'minPixPerRun was greater than maxPixPerSite!'
+    if maxPixPerRun: assert minPixPerRun <= maxPixPerRun, 'minPixPerRun was greater than maxPixPerRun!'
+    vldRuns = [len(grObj.pixels) > minPixPerRun for grObj in grObjs]
+    assert vldRuns.count(True) > 0, 'No runs contained more than minPixPerRun=%d pixels' % minPixPerRun
+    if vldRuns.count(False) > 0:
+        print('Canceling %d runs with fewer than %d pixels' % (vldRuns.count(False), minPixPerRun))
+        grObjs = [grObj for grObj,v in zip(grObjs, vldRuns) if v] # This really make you appreciate np.arrays over lists
 
 print('Summarizing and sanity checking resulting list of graspRun objects...')
 Npix = sum(len(gr.pixels) for gr in grObjs)
@@ -135,17 +145,21 @@ print('%d land runs and %d ocean runs for a total of %d runs packed' % (Nland, N
 
 print('Creating graspDB object and running grasp...', flush=True)
 gDB = graspDB(grObjs)
-simABI = simulation()
-rsltBck, failRun = gDB.processData(maxCPU, binPathGRASP, False, krnlPathGRASP, rndGuess=rndGuess)
-simABI.rsltBck = rsltBck
-print('%d of %d pixels processed successfully' % (sum(~failRun), Npix))
-# del gDB # helpful in large scale processing, but not debugging
 triedPixIDs = [px.pixID for grObj in grObjs for px in grObj.pixels]
+simABI = simulation()
+if dryRun:
+    simABI.rsltBck = [dict() for _ in range(len(triedPixIDs))]
+    failRun = np.full(len(triedPixIDs), False)
+    savePath = savePath[0:-4]+'_DRY-RUN'+savePath[-4:]
+else:
+    rsltBck, failRun = gDB.processData(maxCPU, binPathGRASP, False, krnlPathGRASP, rndGuess=rndGuess)
+    simABI.rsltBck = rsltBck
+    print('%d of %d pixels processed successfully' % (sum(~failRun), Npix))
+# del gDB # helpful in large scale processing, but not debugging
 simABI.rsltFwd = rslts[triedPixIDs][~failRun]
-simABI.spectralInterpFwdToBck() # line up fwd with back wavelengths
+if not dryRun: simABI.spectralInterpFwdToBck() # line up fwd with back wavelengths
 simABI.saveSim(savePath, verbose=True)
-
-
+print('Simulation object with results saved to:\n%s' % savePath)
 
 
 
