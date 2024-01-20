@@ -23,17 +23,17 @@ retrieval:
             threshold_for_stopping_Q_iterations: 1.0e-09 # 1.0e-5 in old MODERO YAML
         measurement_fitting: {polarization: relative_polarization_components}
         noises:
-            noise[1]: # very low weight to 0.470um data
+#             noise[1]: # very low weight to 0.470um data
+#                 error_type: relative
+#                 measurement_type[1]:
+#                     index_of_wavelength_involved: [1] # [0.47]
+#                     type: I
+#                 standard_deviation: 0.5
+#                 standard_deviation_synthetic: 0.0
+            noise[1]:
                 error_type: relative
                 measurement_type[1]:
-                    index_of_wavelength_involved: [1] # [0.47]
-                    type: I
-                standard_deviation: 0.5
-                standard_deviation_synthetic: 0.0
-            noise[2]:
-                error_type: relative
-                measurement_type[1]:
-                    index_of_wavelength_involved: [2, 3, 4, 5] # [0.64, 0.87, 1.6, 2.25]
+                    index_of_wavelength_involved: [1, 2, 3, 4, 5] # [0.64, 0.87, 1.6, 2.25]
                     type: I
                 standard_deviation: 0.03
                 standard_deviation_synthetic: 0.0
@@ -90,7 +90,8 @@ retrieval:
             fitting: true
             parameters: true
             residual: true
-#         surface: true
+        surface:
+            main_characteristics: true
 
     constraints:
         characteristic[1]: 
@@ -359,7 +360,7 @@ retrieval:
                         derivative_order_of_Y_variability:    1
                         lagrange_multiplier_of_Y_variability: 1.0e-3
                         derivative_order_of_T_variability:    1
-                        lagrange_multiplier_of_T_variability: 1.0e4 
+                        lagrange_multiplier_of_T_variability: 1.0e4
 
             mode[2]:
                 initial_guess:                       #1         #2      #3       #4        #5
@@ -480,6 +481,42 @@ retrieval:
                         lagrange_multiplier_of_Y_variability: 1.0e-1                     
                         derivative_order_of_T_variability:    1
                         lagrange_multiplier_of_T_variability: 1.0e-2
+            mode[2]:
+                initial_guess:                      #1          
+                    value:                          [1000.0 ]
+                    min:                            [10.0   ] 
+                    max:                            [3000.0 ]
+                    index_of_wavelength_involved:   [0      ]
+                single_pixel:
+                    smoothness_constraints:
+                        difference_order: 0
+                        lagrange_multiplier: 0
+                multi_pixel:
+                    smoothness_constraints:
+                        derivative_order_of_X_variability:    1
+                        lagrange_multiplier_of_X_variability: 1.0e-1                        
+                        derivative_order_of_Y_variability:    1
+                        lagrange_multiplier_of_Y_variability: 1.0e-1                     
+                        derivative_order_of_T_variability:    1
+                        lagrange_multiplier_of_T_variability: 1.0e-2
+            mode[3]:
+                initial_guess:                      #1          
+                    value:                          [1000.0 ]
+                    min:                            [10.0   ] 
+                    max:                            [3000.0 ]
+                    index_of_wavelength_involved:   [0      ]
+                single_pixel:
+                    smoothness_constraints:
+                        difference_order: 0
+                        lagrange_multiplier: 0
+                multi_pixel:
+                    smoothness_constraints:
+                        derivative_order_of_X_variability:    1
+                        lagrange_multiplier_of_X_variability: 1.0e-1                        
+                        derivative_order_of_Y_variability:    1
+                        lagrange_multiplier_of_Y_variability: 1.0e-1                     
+                        derivative_order_of_T_variability:    1
+                        lagrange_multiplier_of_T_variability: 1.0e-2
 
         characteristic[8]: # DESERT Inspired (lower mins and spectral interpolation/extrapolation of maxes)
             mode[1]:
@@ -513,9 +550,9 @@ retrieval:
             mode[1]:
                 initial_guess:
                     index_of_wavelength_involved: [1]
-                    max:   [0.000003]
+                    max:   [8.000003]
                     min:   [0.000001]
-                    value: [0.000002]
+                    value: [5.000002]
                 single_pixel:
                     smoothness_constraints: {difference_order: 1, lagrange_multiplier: 3}
             retrieved: false
@@ -531,6 +568,12 @@ retrieval:
                     max:                            [1500.0 ]
                     index_of_wavelength_involved:   [0      ]
             mode[2]:
+                initial_guess:                      #1
+                    value:                          [900.0 ]
+                    min:                            [250.0  ]
+                    max:                            [1500.0 ]
+                    index_of_wavelength_involved:   [0      ]
+            mode[3]:
                 initial_guess:                      #1
                     value:                          [900.0 ]
                     min:                            [250.0  ]
