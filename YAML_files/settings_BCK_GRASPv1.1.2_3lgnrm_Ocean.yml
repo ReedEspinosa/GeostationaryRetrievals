@@ -99,9 +99,9 @@ retrieval:
             retrieved: true
             mode[1]: 
                 initial_guess: 
-                    value:                         [0.131,    0.51]
-                    min:                           [0.104,    0.42]
-                    max:                           [0.16,    0.56]
+                    value:                         [0.145,    0.51]
+                    min:                           [0.114,    0.42]
+                    max:                           [0.17,    0.56]
                     index_of_wavelength_involved:  [0,     0]
                 single_pixel:
                     a_priori_estimates:
@@ -168,8 +168,8 @@ retrieval:
                     max:                          [2.000]
                     index_of_wavelength_involved: [0]
                 single_pixel:
-                    a_priori_estimates:
-                        lagrange_multiplier:      [1.0e-9]
+#                     a_priori_estimates:
+#                         lagrange_multiplier:      [1.0e-9]
                     smoothness_constraints:
                         difference_order: 0
                         lagrange_multiplier: 0.0
@@ -188,8 +188,8 @@ retrieval:
                     max:                          [2.00]
                     index_of_wavelength_involved: [0]
                 single_pixel:
-                    a_priori_estimates:
-                        lagrange_multiplier:      [1.0e-9]
+#                     a_priori_estimates:
+#                         lagrange_multiplier:      [1.0e-9]
                     smoothness_constraints:
                         difference_order: 0
                         lagrange_multiplier: 0.0
@@ -208,8 +208,8 @@ retrieval:
                     max:                          [2.00]
                     index_of_wavelength_involved: [0]
                 single_pixel:
-                    a_priori_estimates:
-                        lagrange_multiplier:      [1.0e-9]
+#                     a_priori_estimates:
+#                         lagrange_multiplier:      [1.0e-9]
                     smoothness_constraints:
                         difference_order: 0
                         lagrange_multiplier: 0.0
