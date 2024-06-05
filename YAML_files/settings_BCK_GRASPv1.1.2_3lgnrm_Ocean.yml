@@ -291,7 +291,7 @@ retrieval:
                     index_of_wavelength_involved:                    [1,          2,       3,       4,      5 ]
                 single_pixel:
                     a_priori_estimates:
-                        lagrange_multiplier:      [2.0e-5, 2.0e-5, 2.0e-5, 2.0e-5, 2.0e-5]
+                        lagrange_multiplier:      [1.0e-5, 1.0e-5, 1.0e-5, 1.0e-5, 1.0e-5]
                     smoothness_constraints:
                         difference_order: 1
                         lagrange_multiplier: 1.0e-6
@@ -312,7 +312,7 @@ retrieval:
                 single_pixel:
                     smoothness_constraints:
                         difference_order: 1
-                        lagrange_multiplier: 1.0e-3
+                        lagrange_multiplier: 1.0e-6
                 multi_pixel:
                     smoothness_constraints:
                         derivative_order_of_X_variability:    1
@@ -330,7 +330,7 @@ retrieval:
                 single_pixel:
                     smoothness_constraints:
                         difference_order: 1
-                        lagrange_multiplier: 1.0e-3
+                        lagrange_multiplier: 1.0e-6
                 multi_pixel:
                     smoothness_constraints:
                         derivative_order_of_X_variability:    1
